@@ -1,7 +1,15 @@
 const mongoose = require('mongoose');
+const path = require('path');
+
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 async function connectToMongoDB() {
-  await mongoose.connect("mongodb+srv://laehpimentel_db_user:CRR5PVFyxhYr6R2B@dev-gymbros.abktuqj.mongodb.net/");
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI is not set. Add it to backend/.env or the environment.');
+  }
+
+  await mongoose.connect(mongoUri);
   console.log('Connected to MongoDB');
 }
 
