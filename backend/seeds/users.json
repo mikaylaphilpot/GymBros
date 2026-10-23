@@ -1,0 +1,26 @@
+[
+  {
+    "username": "mikayla_fit",
+    "email": "mikayla@example.com",
+    "password": "$2b$10$dummyhashedpasswordforgta123",
+    "isVerified": true,
+    "streakCount": 4,
+    "friends": []
+  },
+  {
+    "username": "melinda_lifts",
+    "email": "melinda@example.com",
+    "password": "$2b$10$dummyhashedpasswordforgta123",
+    "isVerified": true,
+    "streakCount": 2,
+    "friends": []
+  },
+  {
+    "username": "katie_runs",
+    "email": "katie@example.com",
+    "password": "$2b$10$dummyhashedpasswordforgta123",
+    "isVerified": true,
+    "streakCount": 6,
+    "friends": []
+  }
+]
