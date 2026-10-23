@@ -1,5 +1,6 @@
 [
   {
+    "userId": "654321654321654321654321",
     "dayOfWeek": "Tuesday",
     "startTime": "12:00 PM",
     "endTime": "1:00 PM",
@@ -7,6 +8,7 @@
     "isCompletedToday": true
   },
   {
+    "userId": "654321654321654321654321",
     "dayOfWeek": "Tuesday",
     "startTime": "6:00 PM",
     "endTime": "7:00 PM",
