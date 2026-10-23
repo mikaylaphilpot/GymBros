@@ -1,18 +1,12 @@
-import { MongoClient } from 'mongodb';
+const mongoose = require('mongoose');
 
-const client = new MongoClient("mongodb+srv://laehpimentel_db_user:CRR5PVFyxhYr6R2B@dev-gymbros.abktuqj.mongodb.net/");
-
-export async function connectToMongoDB() {
-  try {
-    await client.connect();
-    console.log("You successfully connected to MongoDB!");
-    return client;
-  } catch (err) {
-    console.dir(err);
-  }
+async function connectToMongoDB() {
+  await mongoose.connect("mongodb+srv://laehpimentel_db_user:CRR5PVFyxhYr6R2B@dev-gymbros.abktuqj.mongodb.net/");
+  console.log('Connected to MongoDB');
 }
 
-// Call this only when your application terminates
-export async function disconnectFromMongoDB() {
-  await client.close();
+async function disconnectFromMongoDB() {
+  await mongoose.disconnect();
 }
+
+module.exports = { connectToMongoDB, disconnectFromMongoDB };
