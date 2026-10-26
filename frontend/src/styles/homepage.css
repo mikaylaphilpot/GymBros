@@ -1,0 +1,123 @@
+
+/*u just need to className the components in the component files so that they can be sleected by CSS! thats easy!! just go in and do it!*/
+
+
+
+body {
+    background-image: url(../assets/Background.png);
+    background-repeat: repeat;
+}
+
+.white-container {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    text-align: start;
+    gap: 15px;
+    padding: 30px 60px;
+
+    min-height: 100vh;
+    box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
+    background-color: white;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    gap: 50px;
+
+    color: #000000;
+}
+
+.header h1 {
+    font-size: 55px;
+}
+
+.header .no-gap-group-horizontal {
+    margin-left: auto;
+    gap: 40px;
+}
+
+.no-gap-group-horizontal {
+    display: flex;
+    flex-direction: row;
+}
+
+.no-gap-group-vertical {
+    display: flex;
+    flex-direction: column;
+}
+
+.line-divider{
+    background-color: #B31517;
+    height: 8px;
+    border: 0;
+    margin: 0;
+  
+}
+
+.bros-schedule-box, .user-schedule-box {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.general-text {
+    font-size: 34px;
+    color: #000000;
+    padding: 10px 0px 20px 0px;
+    line-height: 35px;
+}
+
+.bro-workout-widget, .user-workout-widget {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    font-size: 28px; 
+    font-weight: bold;
+    line-height: 35px;
+    color: #000000;
+    
+    border-style: solid;
+    border-radius: 20px;
+    border-color: #B31517;
+    border-width: 6px;
+    padding: 15px;
+}
+
+.bro-workout-widget .iconImage, .user-workout-widget .iconImage, .checkbox-label {
+    margin-left: auto;  
+}
+
+.checkbox-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.checkbox {
+  transform: scale(2.0);
+  -webkit-transform: scale(2.0);
+  accent-color: #61B315; 
+
+  margin: 10px; 
+}
+
+.user-schedule-box {
+    padding-bottom: 100px;
+}
+
+.overdue {
+    background-color: #FF9294;
+}
+
+.completed {
+    background-color: #C7F4AA;
+}
+
+.default {
+    background-color: #FFFFFF;
+}

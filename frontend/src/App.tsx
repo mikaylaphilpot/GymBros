@@ -3,8 +3,13 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
+import { Routes, Route } from 'react-router'
 
-function App() {
+import RoutingButton from './components/RoutingButton'
+import ForgotPswdPage from './pages/ForgotPswdPage'
+import HomePage from './pages/HomePage'
+
+function TestPage() {
   const [count, setCount] = useState(0)
 
   return (
@@ -29,6 +34,16 @@ function App() {
           Count is {count}
         </button>
       </section>
+
+      <section>
+        <RoutingButton label="HomePage" routingTo="/home-page" />
+      </section>
+
+
+
+
+
+
 
       <div className="ticks"></div>
 
@@ -119,4 +134,12 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<TestPage />} />
+      <Route path="/home-page" element={<HomePage />} />
+      <Route path="/forgot-password" element={<ForgotPswdPage />} />
+    </Routes>
+  )
+}
