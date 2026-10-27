@@ -2,6 +2,7 @@ import PageTitle from "../components/PageTitle";
 import ParagraphText from "../components/ParagraphText";
 import Icon from "../components/Icon";
 import BroWorkoutWidget from "../components/BroWorkoutWidget";
+import RoutingButton from "../components/RoutingButton";
 import '../styles/homepage.css';
 
 import bugIcon from "../assets/bugIcon.png";
@@ -18,8 +19,8 @@ export default function HomePage() {
                 <div className="header">
                     <PageTitle label="Hey, Bro!" />
                     <div className="no-gap-group-horizontal">
-                        <Icon src={brosIcon} height={60} width={60} />
-                        <Icon src={profileIcon} height={60} width={60} />
+                        <RoutingButton label="Bros" routingTo="/home-page" iconSrc={brosIcon} />
+                        <RoutingButton label="Profile" routingTo="/profile-page" iconSrc={profileIcon} />   
                     </div>
                 </div>
 

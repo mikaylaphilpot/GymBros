@@ -4,11 +4,12 @@ type IconProps = {
     src: string;
     height: number;
     width: number;
+    onClick?: () => void;
 }
 
-export default function Icon({src, height, width}: IconProps) {
+export default function Icon({src, height, width, onClick}: IconProps) {
     return (
-        <img src={src} height={height} width={width} className="iconImage"/>
+        <img src={src} height={height} width={width} className="iconImage" onClick={onClick}/>
     );
 }
 

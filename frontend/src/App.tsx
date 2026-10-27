@@ -8,6 +8,7 @@ import { Routes, Route } from 'react-router'
 import RoutingButton from './components/RoutingButton'
 import ForgotPswdPage from './pages/ForgotPswdPage'
 import HomePage from './pages/HomePage'
+import ProfilePage from './pages/ProfilePage'
 
 function TestPage() {
   const [count, setCount] = useState(0)
@@ -36,7 +37,7 @@ function TestPage() {
       </section>
 
       <section>
-        <RoutingButton label="HomePage" routingTo="/home-page" />
+        <RoutingButton label="HomePage" routingTo="/home-page" iconSrc=''/>
       </section>
 
 
@@ -140,6 +141,7 @@ export default function App() {
       <Route path="/" element={<TestPage />} />
       <Route path="/home-page" element={<HomePage />} />
       <Route path="/forgot-password" element={<ForgotPswdPage />} />
+      <Route path="/profile-page" element={<ProfilePage />} />
     </Routes>
   )
 }
