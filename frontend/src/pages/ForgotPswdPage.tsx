@@ -25,9 +25,6 @@ export default function ForgotPswdPage() {
                     <Link to="/home-page">Back</Link>
                 </div>
 
-                
-
-
             </div>
         </div>
 
