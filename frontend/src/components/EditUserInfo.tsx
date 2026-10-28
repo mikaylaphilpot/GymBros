@@ -8,9 +8,10 @@ type UserInfoProfileSectionProps = {
     username: string;
     email: string;
     password: string;
+    onChange: (inputName: "name" | "username" | "email" | "password", value: string) => void;
 }
 
-export default function UserInfoProfileSection({name, username, email, password}: UserInfoProfileSectionProps) {
+export default function UserInfoProfileSection({name, username, email, password, onChange}: UserInfoProfileSectionProps) {
     const [showPswd, setShowPswd] = useState(false);
 
     function togglePasswordVisibility() {
@@ -24,22 +25,22 @@ export default function UserInfoProfileSection({name, username, email, password}
             
             <div className="edit-profile-box-item">
                 <label htmlFor="name"><strong>Name: </strong></label>
-                <input type="text" id="name" name="name" value={name}/>
+                <input type="text" id="name" name="name" value={name} onChange={(event) => onChange("name", event.target.value)} />
             </div>
 
             <div className="edit-profile-box-item">
-                <label htmlFor="name"><strong>Username: </strong></label>
-                <input type="text" id="username" name="username" value={username}/>
+                <label htmlFor="username"><strong>Username: </strong></label>
+                <input type="text" id="username" name="username" value={username} onChange={(event) => onChange("username", event.target.value)} />
             </div>
 
             <div className="edit-profile-box-item">
-                <label htmlFor="name"><strong>Email: </strong></label>
-                <input type="text" id="email" name="email" value={email}/>
+                <label htmlFor="email"><strong>Email: </strong></label>
+                <input type="text" id="email" name="email" value={email} onChange={(event) => onChange("email", event.target.value)} />
             </div>
 
             <div className="edit-profile-box-item">
-                <label htmlFor="name"><strong>Password: </strong></label>
-                <input type="text" id="password" name="password" value={showPswd ? password : "*".repeat(password.length)} />
+                <label htmlFor="password"><strong>Password: </strong></label>
+                <input type="text" id="password" name="password" value={showPswd ? password : "*".repeat(password.length)} onChange={(event) => onChange("password", event.target.value)} />
                 
                 <button type="button" className="password-toggle" onClick={togglePasswordVisibility}>
                     <Icon src={showPswd ? hidePswdIcon : showPswdIcon} height={20} width={20} />

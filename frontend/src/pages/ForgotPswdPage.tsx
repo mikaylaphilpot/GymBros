@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import PageTitle from "../components/PageTitle";
 import ParagraphText from "../components/ParagraphText";
 import RoutingButton from "../components/RoutingButton";
@@ -21,7 +22,7 @@ export default function ForgotPswdPage() {
 
                 <div className="pswd-page-routing">
                     <RoutingButton label="Send" routingTo="" iconSrc="" normalButton={1} />
-                    <a href="/home-page">Back</a>
+                    <Link to="/home-page">Back</Link>
                 </div>
 
                 

@@ -5,12 +5,12 @@ export default function AddScheduleItem() {
 
             <div className="schedule-item">
                 <label htmlFor="startTime">Start Time</label>
-                <input type="text" id="startTime" name="startTime" />
+                <input type="time" id="startTime" name="startTime" />
             </div>
 
             <div className="schedule-item">
                 <label htmlFor="endTime">End Time</label>
-                <input type="text" id="endTime" name="endTime" />
+                <input type="time" id="endTime" name="endTime" />
             </div>
 
             <div className="schedule-item">

@@ -1,6 +1,5 @@
 import PageTitle from "../components/PageTitle";
 import ParagraphText from "../components/ParagraphText";
-import Icon from "../components/Icon";
 import BroWorkoutWidget from "../components/BroWorkoutWidget";
 import RoutingButton from "../components/RoutingButton";
 import '../styles/homepage.css';
