@@ -40,6 +40,7 @@ function TestPage() {
 
       <section>
         <RoutingButton label="HomePage" routingTo="/home-page" iconSrc=''/>
+        <RoutingButton label="ForgotPswd" routingTo="/forgot-password" iconSrc=''/>
       </section>
 
 

@@ -21,7 +21,7 @@ export default function EditUserInfoPage() {
                 <hr className="line-divider" />
             </div>
 
-            <EditUserInfo title="User Information" name="John Gymborough" username="Jymbro20" email="johnGym@gmail.com" password="hello123" />
+            <EditUserInfo name="John Gymborough" username="Jymbro20" email="johnGym@gmail.com" password="hello123" />
 
             <RoutingButton label="Save" routingTo="/profile-page" iconSrc="" normalButton={1}/>
 

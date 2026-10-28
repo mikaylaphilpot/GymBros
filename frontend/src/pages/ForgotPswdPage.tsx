@@ -1,27 +1,34 @@
 import PageTitle from "../components/PageTitle";
 import ParagraphText from "../components/ParagraphText";
-import Icon from "../components/Icon";
+import RoutingButton from "../components/RoutingButton";
+import '../styles/homepage.css';
 
 export default function ForgotPswdPage() {
     return (
-        //i accidentallyu made this page called forgotpswd when i was building the home page,,,remake this pls!
-        <div className="white-container">
-            <div className="header">
-                <PageTitle label="Hey, Bro!" />
-                <Icon src="react.svg" height={200} width={200} />
-                <Icon src="react.svg" height={200} width={200} />
+        <div className="container-wrapper">
+            <div className="condensed-white-container">
+
+                <div className="header">
+                    <PageTitle label="Forgot Password?" />
+                </div>
+
+                <ParagraphText text="Enter email below and we'll send you a password reset link." />
+
+                <div className="forget-password-box">
+                    <label htmlFor="email">Email</label>
+                    <input type="email" id="email" name="email" />
+                </div>
+
+                <div className="pswd-page-routing">
+                    <RoutingButton label="Send" routingTo="" iconSrc="" normalButton={1} />
+                    <a href="/home-page">Back</a>
+                </div>
+
+                
+
+
             </div>
-
-            <div className="user-schedule-box">
-                <ParagraphText text="Here's your schedule for the day." />
-            </div>
-
-
         </div>
-
-
-        
-
 
     );
 }
