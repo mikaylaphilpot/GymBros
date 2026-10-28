@@ -9,6 +9,8 @@ import RoutingButton from './components/RoutingButton'
 import ForgotPswdPage from './pages/ForgotPswdPage'
 import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
+import EditUserInfoPage from './pages/EditUserInfoPage'
+import EditSchedulePage from './pages/EditSchedulePage'
 
 function TestPage() {
   const [count, setCount] = useState(0)
@@ -142,6 +144,8 @@ export default function App() {
       <Route path="/home-page" element={<HomePage />} />
       <Route path="/forgot-password" element={<ForgotPswdPage />} />
       <Route path="/profile-page" element={<ProfilePage />} />
+      <Route path="/edit-user-info-page" element={<EditUserInfoPage />} />
+      <Route path="/edit-schedule-page" element={<EditSchedulePage />} />
     </Routes>
   )
 }

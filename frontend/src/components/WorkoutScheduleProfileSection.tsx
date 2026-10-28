@@ -13,7 +13,7 @@ export default function WorkoutScheduleProfileSection({title}: WorkoutSchedulePr
             <div className="header profile-no-gap-group">
                 <h2>{title}</h2>
                 {/* chnage where these buttons go to when create edit screen */}
-                <RoutingButton label="Edit" routingTo="/home-page" iconSrc={editIcon} />
+                <RoutingButton label="Edit" routingTo="/edit-schedule-page" iconSrc={editIcon} />
             </div>
             
             <UserWorkoutWidget day="Monday" startTime="10:00am" endTime="11:00am" activity="Tennis" profilePage={1}/>

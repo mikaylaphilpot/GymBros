@@ -14,7 +14,7 @@ export default function UserWorkoutWidget({day, startTime, endTime, activity, pr
 
     if (profilePage) {
         return (
-            <div className="profile-schedule-widgets">
+            <div className="profile-schedule-widgets general-text">
                 <p><strong>{day}: </strong>{startTime} - {endTime}, {activity}</p>
             </div>
         )

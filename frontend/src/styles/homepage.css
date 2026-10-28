@@ -1,8 +1,3 @@
-
-/*u just need to className the components in the component files so that they can be sleected by CSS! thats easy!! just go in and do it!*/
-
-
-
 body {
     background-image: url(../assets/Background.png);
     background-repeat: repeat;
@@ -21,6 +16,8 @@ body {
     min-height: 100vh;
     box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
     background-color: white;
+
+    container-type: inline-size; 
 }
 
 .header {
@@ -91,7 +88,7 @@ p {
     gap: 30px;
 }
 
-.general-text, .profile-schedule-widgets, .profile-information-box p {
+.general-text, .profile-information-box p {
     font-size: 34px;
     color: #000000;
     padding: 10px 0px 20px 0px;
@@ -196,6 +193,60 @@ p {
     margin-bottom: 80px;
 }
 
-.profile-schedule-widgets, .profile-information-box p {
+.profile-schedule-widgets, .profile-information-box p, .edit-profile-box{
     font-size: 25px;
+}
+
+.edit-profile-box {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+
+    color: #000000;
+}
+
+.edit-profile-box-item input {
+    font-size: 25px;
+    padding: 10px;
+    background-color: #D9D9D9;
+    border-style: none;
+    
+}
+
+.schedule-checkboxes {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    margin: 30px auto;
+
+
+    font-size: 25px;
+}
+
+.schedule-item-header, .schedule-item-box {
+    display: flex;
+    flex-direction: row;
+}
+
+.schedule-item-header h2 {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.schedule-item-box {
+    gap: 20px;
+    font-size: 20px;
+}
+
+.schedule-item-box input {
+    padding: 10px;
+    font-size: 20px;
+    border-style: none;
+    background-color: #D9D9D9;
+    width: 30cqw;
+}
+
+.schedule-item {
+    display: flex;
+    flex-direction: column;
 }

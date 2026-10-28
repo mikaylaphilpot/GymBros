@@ -26,7 +26,7 @@ export default function UserInfoProfileSection({title, name, username, email, pa
             <div className="header profile-no-gap-group">
                 <h2>{title}</h2>
                 {/* chnage where these buttons go to when create edit screen */}
-                <RoutingButton label="Edit" routingTo="/home-page" iconSrc={editIcon} />
+                <RoutingButton label="Edit" routingTo="/edit-user-info-page" iconSrc={editIcon} />
             </div>
             
             <p><strong>Name: </strong>{name}</p>
