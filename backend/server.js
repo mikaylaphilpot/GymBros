@@ -1,7 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const router = require('./routes/authRoutes');
+const dotenv = require('dotenv');
+const { MongoClient } = require('mongodb');
+const {
+  createInMemoryPushSubscriptionStore,
+  createMongoPushSubscriptionStore,
+} = require('./models/pushSubscription');
+const { createNotificationRouter } = require('./routes/notificationRoutes');
 
+dotenv.config();
 const app = express();
 
 app.use(cors());
@@ -12,37 +19,59 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-app.use('/api/auth', router);
+if (process.env.ALLOW_DEV_USER_HEADER === 'true') {
+  app.use((req, _res, next) => {
+    if (typeof req.headers['x-user-id'] === 'string') {
+      req.user = { id: req.headers['x-user-id'] };
+    }
+    next();
+  });
+}
 
-app.listen(5001, () => {
-  console.log('Server running on port 5001');
-});
+function createUnavailableStore() {
+  return {
+    save: async () => {
+      const error = new Error('MongoDB is not configured');
+      error.statusCode = 503;
+      throw error;
+    },
+    findByUserId: async () => null,
+    deleteByUserId: async () => undefined,
+  };
+}
 
-// extra example code
-// backend/server.js
-// const express = require('express');
-// const dotenv = require('dotenv');
-// const { errorHandler } = require('./middleware/errorMiddleware');
+async function startServer() {
+  let client;
+  let store = createInMemoryPushSubscriptionStore();
+  if (process.env.MONGODB_URI) {
+    client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+    store = createMongoPushSubscriptionStore(
+      client.db(process.env.MONGODB_DB || 'gymbros'),
+    );
+  } else if (process.env.NODE_ENV === 'production') {
+    store = createUnavailableStore();
+  } else {
+    console.warn('MONGODB_URI is not configured; using in-memory push subscriptions');
+  }
 
-// // Load environment variables from your .env file
-// dotenv.config();
+  app.use('/api/notifications', createNotificationRouter({ store }));
+  app.use((error, _req, res, _next) => {
+    const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    res.status(status).json({ message: error.message || 'Internal server error' });
+  });
 
-// const app = express();
+  const port = Number(process.env.PORT) || 5001;
+  return app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
 
-// // Middleware to parse incoming JSON data
-// app.use(express.json()); 
-// app.use(express.urlencoded({ extended: false }));
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Failed to start server:', error.message);
+    process.exitCode = 1;
+  });
+}
 
-// // Basic route to verify the server is running locally
-// app.get('/api/status', (req, res) => {
-//   res.status(200).json({ message: 'GymBros local server is running!' });
-// });
-
-// // Import and use your Notification Routes here later
-// // app.use('/api/notifications', require('./routes/notificationRoutes'));
-
-// // This MUST be the last middleware in the file to catch all errors
-// app.use(errorHandler);
-
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => console.log(`Server started locally on port ${PORT}`)); 
+module.exports = { app, startServer };

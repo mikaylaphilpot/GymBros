@@ -1,74 +1,73 @@
-// This file contains the Express API endpoints that handle the server-side notification logic. 
-// The /subscribe route receives the subscription data from the frontend and saves it to the database. 
-// The /send route is what you will call when a user wants to "bug" their friends; it retrieves the -
-//  - target user's subscription from the database and uses the web-push library to dispatch the message payload.
+const express = require('express');
+const webpush = require('web-push');
 
-// example code
-// routes/notificationRoutes.js
-// const express = require('express');
-// const webpush = require('web-push');
-// const PushSubscription = require('../models/PushSubscription');
-// const router = express.Router();
-// Assuming you have a JWT authentication middleware
-// const { protect } = require('../middleware/authMiddleware'); 
+function getUserId(req) {
+  const userId = req.user && (req.user.id || req.user._id);
+  return typeof userId === 'string' && userId.trim().length > 0 ? userId.trim() : null;
+}
 
-// Configure web-push with your VAPID keys
-// webpush.setVapidDetails(
-//   'mailto:your-email@example.com',
-//   process.env.VAPID_PUBLIC_KEY,
-//   process.env.VAPID_PRIVATE_KEY
-// );
+function createNotificationRouter({ store, pushClient = webpush }) {
+  if (!store) {
+    throw new TypeError('A push subscription store is required');
+  }
 
-// API Endpoint 1: Save User Subscription
-// The React client sends this after requesting notification permissions
-// router.post('/subscribe', protect, async (req, res) => {
-//   try {
-//     const { subscription } = req.body;
-    
-//     // Upsert the subscription so the user only has one active device record
-//     await PushSubscription.findOneAndUpdate(
-//       { userId: req.user._id },
-//       { subscription: subscription },
-//       { upsert: true, new: true }
-//     );
+  const router = express.Router();
 
-//     res.status(201).json({ message: 'Subscription saved successfully.' });
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to save subscription' });
-//   }
-// });
+  router.post('/subscribe', async (req, res, next) => {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication is required' });
+    }
 
-// // API Endpoint 2: Send Notification
-// // Receives the text to display and the target user ID
-// router.post('/send', protect, async (req, res) => {
-//   try {
-//     const { targetUserId, messageText } = req.body;
+    try {
+      await store.save(userId, req.body && req.body.subscription);
+      return res.status(201).json({ message: 'Subscription saved successfully' });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        return res.status(400).json({ message: error.message });
+      }
+      return next(error);
+    }
+  });
 
-//     // Find the target user's subscription in MongoDB
-//     const subRecord = await PushSubscription.findOne({ userId: targetUserId });
-    
-//     if (!subRecord) {
-//       return res.status(404).json({ error: 'User is not subscribed to notifications' });
-//     }
+  router.post('/send', async (req, res, next) => {
+    const senderId = getUserId(req);
+    const { targetUserId, messageText, title, url } = req.body || {};
 
-//     // Payload to send to the Service Worker
-//     const payload = JSON.stringify({
-//       title: 'GymBros Notification',
-//       body: messageText,
-//       icon: '/logo.png' // Add your app icon here
-//     });
+    if (!senderId) {
+      return res.status(401).json({ message: 'Authentication is required' });
+    }
+    if (typeof targetUserId !== 'string' || targetUserId.trim().length === 0) {
+      return res.status(400).json({ message: 'targetUserId is required' });
+    }
+    if (typeof messageText !== 'string' || messageText.trim().length === 0) {
+      return res.status(400).json({ message: 'messageText is required' });
+    }
 
-//     // Fire the push notification
-//     await webpush.sendNotification(subRecord.subscription, payload);
-    
-//     res.status(200).json({ message: 'Notification sent successfully.' });
-//   } catch (error) {
-//     if (error.statusCode === 410) {
-//       // 410 means the subscription is no longer valid (e.g., user revoked permission)
-//       await PushSubscription.deleteOne({ userId: req.body.targetUserId });
-//     }
-//     res.status(500).json({ error: 'Failed to send notification' });
-//   }
-// });
+    try {
+      const record = await store.findByUserId(targetUserId.trim());
+      if (!record) {
+        return res.status(404).json({ message: 'User is not subscribed to notifications' });
+      }
 
-// module.exports = router;
+      const payload = JSON.stringify({
+        title: typeof title === 'string' && title.trim() ? title.trim() : 'GymBros Notification',
+        body: messageText.trim(),
+        url: typeof url === 'string' && url.trim() ? url.trim() : '/',
+      });
+
+      await pushClient.sendNotification(record.subscription, payload);
+      return res.status(200).json({ message: 'Notification sent successfully' });
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 410) {
+        await store.deleteByUserId(targetUserId.trim());
+        return res.status(410).json({ message: 'The target notification subscription is no longer valid' });
+      }
+      return next(error);
+    }
+  });
+
+  return router;
+}
+
+module.exports = { createNotificationRouter };
