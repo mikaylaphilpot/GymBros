@@ -3,6 +3,7 @@ const router = express.Router();
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const User = require('../models/User.js');
+const bcrypt = require('bcrypt');
 
 router.post('/signup', async (req, res)=> {
     // Handle signup logic here
@@ -39,12 +40,24 @@ router.post('/signup', async (req, res)=> {
             return res.status(409).json({ message: 'Username already in use' });
         }
 
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await User.create({
+            username: normUsername,
+            email: normEmail,
+            password: hashedPassword
+        });
+
     }catch(error){
+        
+        console.error('Signup error:', error);
         return res.status(500).json({message: 'Database/server connection error'})
+        
     }
     
 
-    res.json({ message: 'User signed up successfully!' });
+
+    res.status(201).json({ message: 'User signed up successfully!' });
 });
 
 module.exports = router;
