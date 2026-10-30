@@ -44,7 +44,6 @@ export default function AddFriends({ onClose }: AddFriendsProps) {
           <input
             placeholder="Find your Bro"
             className={searchInput}
-            readOnly
           />
         </label>
         <button
