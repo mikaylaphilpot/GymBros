@@ -1,0 +1,50 @@
+[
+  {
+    "username": "Mikayla123",
+    "email": "mikayla@example.com",
+    "password": "123",
+    "isVerified": true,
+    "streakCount": 4,
+    "friends": []
+  },
+  {
+    "username": "melinda",
+    "email": "melinda@example.com",
+    "password": "password",
+    "isVerified": true,
+    "streakCount": 2,
+    "friends": []
+  },
+  {
+    "username": "katie_runs",
+    "email": "katie@example.com",
+    "password": "hello",
+    "isVerified": true,
+    "streakCount": 6,
+    "friends": []
+  },
+  {
+    "username": "JonathonF",
+    "email": "Jonathon@example.com",
+    "password": "111",
+    "isVerified": false,
+    "streakCount": 3,
+    "friends": []
+  },
+  {
+    "username": "Sindhu",
+    "email": "sindhu@example.com",
+    "password": "pass",
+    "isVerified": true,
+    "streakCount": 5,
+    "friends": []
+  },
+  {
+    "username": "Laeh_Swims",
+    "email": "laeh@example.com",
+    "password": "test",
+    "isVerified": true,
+    "streakCount": 2,
+    "friends": []
+  }
+]
