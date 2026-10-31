@@ -3,8 +3,16 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
+import { Routes, Route } from 'react-router'
 
-function App() {
+import RoutingButton from './components/RoutingButton'
+import ForgotPswdPage from './pages/ForgotPswdPage'
+import HomePage from './pages/HomePage'
+import ProfilePage from './pages/ProfilePage'
+import EditUserInfoPage from './pages/EditUserInfoPage'
+import EditSchedulePage from './pages/EditSchedulePage'
+
+function TestPage() {
   const [count, setCount] = useState(0)
 
   return (
@@ -29,6 +37,17 @@ function App() {
           Count is {count}
         </button>
       </section>
+
+      <section>
+        <RoutingButton label="HomePage" routingTo="/home-page" iconSrc=''/>
+        <RoutingButton label="ForgotPswd" routingTo="/forgot-password" iconSrc=''/>
+      </section>
+
+
+
+
+
+
 
       <div className="ticks"></div>
 
@@ -119,4 +138,15 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<TestPage />} />
+      <Route path="/home-page" element={<HomePage />} />
+      <Route path="/forgot-password" element={<ForgotPswdPage />} />
+      <Route path="/profile-page" element={<ProfilePage />} />
+      <Route path="/edit-user-info-page" element={<EditUserInfoPage />} />
+      <Route path="/edit-schedule-page" element={<EditSchedulePage />} />
+    </Routes>
+  )
+}
