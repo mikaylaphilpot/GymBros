@@ -1,4 +1,5 @@
 import loginBackground from "../assets/Background.png"
+import { Link } from "react-router"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -55,23 +56,23 @@ export default function Login() {
           className={`mt-[45px] ${input}`}
         />
 
-        <a
-          href="/forgot-password"
+        <Link
+          to="/forgot-password"
           className={`self-start leading-[35px] ${link}`}
         >
           Forget Password?
-        </a>
+        </Link>
 
         <button type="submit" className={button}>
           Sign In
         </button>
 
-        <a
-          href="/signup"
+        <Link
+          to="/signup"
           className={`self-center text-center leading-[40px] ${link}`}
         >
           Not a Bro? Create Account
-        </a>
+        </Link>
       </form>
     </main>
   )

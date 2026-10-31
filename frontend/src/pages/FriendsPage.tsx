@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { Link } from "react-router"
+
 import backgroundImage from "../assets/Background.png"
 import searchImage from "../assets/Search.png"
 import AddFriends from "./AddFriends"
@@ -46,9 +48,9 @@ export default function FriendsPage() {
       />
       <div className={panel}>
         <div className={toolbar}>
-          <button type="button" className={backButton}>
+          <Link to="/" className={backButton}>
             Back
-          </button>
+          </Link>
           <label className={searchField}>
             <img
               src={searchImage}

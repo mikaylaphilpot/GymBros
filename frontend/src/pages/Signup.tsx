@@ -1,4 +1,5 @@
 import loginBackground from "../assets/Background.png"
+import { Link } from "react-router"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -74,9 +75,9 @@ export default function SignUp() {
           Sign Up
         </button>
 
-        <a href="/" className={link}>
+        <Link to="/" className={link}>
           Already a Bro? Sign In
-        </a>
+        </Link>
       </form>
     </main>
   )
