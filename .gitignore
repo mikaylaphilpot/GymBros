@@ -1,9 +1,11 @@
 
 node_modules/
 backend/node_modules/
+
 .env
 .env.*
 !.env.example
+
 dist/
 .DS_Store
 
