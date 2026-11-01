@@ -5,6 +5,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$
 const User = require('../models/User.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/authMiddleware.js');
 
 
 router.post('/signup', async (req, res) => {
@@ -13,7 +14,12 @@ router.post('/signup', async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
 
-    if (typeof username !== "string" || username.trim().length === 0 || typeof email !== "string" || email.trim().length === 0 || typeof password !== "string" || password.trim().length === 0) {
+    if (typeof username !== "string" || 
+        username.trim().length === 0 || 
+        typeof email !== "string" || 
+        email.trim().length === 0 || 
+        typeof password !== "string" ||
+         password.trim().length === 0) {
         return res.status(400).json({ message: 'Please fill out all fields!' });
     }
 
@@ -113,6 +119,25 @@ router.post('/login', async (req, res) => {
 
     
 });
+
+router.get('/me', authMiddleware, async (req, res) => {
+
+    try{
+    const existingUser = await User.findById(req.userId)
+
+    if(existingUser === null){
+        return res.status(404).json({message: 'User not found'});
+    }
+
+    return res.status(200).json({id: existingUser._id, username: existingUser.username, email: existingUser.email});
+
+    }catch(error){
+
+        console.error('Internal error', error);
+        return res.status(500).json({ message: 'Internal server error' })
+    }
+});
+
 
 
 module.exports = router;
