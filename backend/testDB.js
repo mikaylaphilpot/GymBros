@@ -1,4 +1,4 @@
-
+//TEST FUNCTION TO CHECK DB CONNECTION
 require('dotenv').config();
 const mongoose = require('mongoose');
 
