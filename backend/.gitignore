@@ -7,5 +7,6 @@ backend/node_modules/
 !.env.example
 
 dist/
-.DS_Store
+../.DS_Store
+
 
