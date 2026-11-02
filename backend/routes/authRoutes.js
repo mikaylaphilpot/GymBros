@@ -307,7 +307,66 @@ router.post('/resend-verification', async (req, res)=> {
 });
 
 
+router.post('/reset-password', async (req, res) => {
 
+    // Retrieve the reset token and new password from the request
+    const resetToken = req.body.token;
+    const password = req.body.password;
+  
+    // Validate that both values are nonempty strings
+    if(typeof resetToken !== "string" || resetToken.trim().length !== 0 || typeof password !== "string" || password.trim().length !== 0){
+        return res.status(400).json({ message: 'Please fill out all fields!' });
+    }
+
+    // Validate the new password using your existing passwordRegex
+     if (!passwordRegex.test(password)) {
+        return res.status(400).json({ message: 'Your Password does not meet requirements' })
+    }
+   
+    // Hash the incoming reset token using SHA-256
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    try {
+
+        // Find the user whose stored resetPasswordToken matches AND whose resetPasswordExpires is in the future
+        const existingUser = User.findOne({
+            resetPasswordToken: hashedResetToken,
+            resetPasswordExpires:{ $gt: Date.now() } 
+
+        })
+
+        // If no matching user exists, return 400
+        // with an invalid or expired token message
+        if(existingUser === null){
+            return res.status(400).json({
+                message: "Invalid or expired token"
+            });
+        }
+
+        // Hash the new password using bcrypt
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Replace the user's stored password with the new hash
+        existingUser.password = hashedPassword;
+
+        // Clear resetPasswordToken and resetPasswordExpires
+        existingUser.resetPasswordToken = null;
+        existingUser.resetPasswordExpires = null;
+
+        // 10. Save the updated user document in MongoDB
+        await existingUser.save();
+
+        // 11. Return 200 with a password reset success message
+        // Do not automatically log the user in
+        return res.status(200).json({message: "Password reset was successful"})
+
+    } catch (error) {
+
+        // Log unexpected errors and Return 500 for internal server errors
+            console.error('Password reset error', error);
+        return res.status(500).json({ message: 'Password reset error' });
+    }
+});
 
 
 
