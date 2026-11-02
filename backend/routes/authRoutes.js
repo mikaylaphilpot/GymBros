@@ -6,6 +6,8 @@ const User = require('../models/User.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware.js');
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail.js');
 
 
 // POST /api/auth/signup
@@ -57,6 +59,10 @@ router.post('/signup', async (req, res) => {
             return res.status(409).json({ message: 'Username already in use' });
         }
 
+        // Create a random verification token and hash it
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const hashedVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
         // Hash the password before storing it in DB
         const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -64,8 +70,21 @@ router.post('/signup', async (req, res) => {
         await User.create({
             username: normUsername,
             email: normEmail,
-            password: hashedPassword
+            password: hashedPassword,
+            verificationToken: hashedVerificationToken,
+            verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000
+
         });
+
+        // Use the token to create your verification link
+        const verificationLink = 'http://localhost:5001/api/auth/verify-email?token=' + verificationToken;
+
+        // Send email to user with verification link whch will expire in 24 hours
+         await sendEmail(
+            normEmail,
+            "Verify your GymBros account",
+            "Click this link to verify your email: " + verificationLink
+        );
 
     } catch (error) {
 
@@ -118,6 +137,10 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
 
+        if(!existingUser.isVerified){
+            return res.status(403).json({ message: 'Please verify your email before logging in.' });
+        }
+
         // Generate a JWT containing the authenticated user's MongoDB ID
         const token = jwt.sign(
             { userId: existingUser._id.toString() },
@@ -166,6 +189,127 @@ router.get('/me', authMiddleware, async (req, res) => {
         return res.status(500).json({ message: 'Internal server error' })
     }
 });
+
+router.get('/verify-email', async (req, res) => {
+
+    const token = req.query.token;
+
+    if(!token|| typeof token !== "string" ){
+        return res.status(400).json({
+            message:'Inalid verification token.'
+        });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    try{
+
+        const existingUser = await User.findOne({ 
+            verificationToken: hashedToken, 
+            verificationTokenExpires:{ $gt: Date.now() } 
+        })
+
+        if(existingUser === null){
+            return res.status(400).json({
+                message: 'Invalid or expired verification token'
+            })
+        }
+
+        existingUser.isVerified = true;
+        existingUser.verificationToken = null;
+        existingUser.verificationTokenExpires = null;
+
+        await existingUser.save();
+
+        return res.status(200).json({
+            message: "Email verified successfully!"
+        });
+
+     
+
+
+    }catch(error){
+
+        console.error('Email verification error', error);
+        return res.status(500).json({ message: 'Email verification error' })
+
+    }
+
+    
+});
+
+//POST /api/auth/resend-verification
+router.post('/resend-verification', async (req, res)=> {
+
+    // Accept the user's email address and normalize it
+    const email = req.body.email;
+
+    if (typeof email !== "string" || email.trim().length === 0) {
+        return res.status(400).json({
+            message: "Invalid email address"
+        });
+    }
+    
+    const normEmail = email.trim().toLowerCase();
+
+    try{
+        // Find the matching account in MongoDB.
+        const existingUser = await User.findOne({
+            email: normEmail
+        });
+
+        // Check wether user exists
+        if(existingUser === null ){
+            return res.status(404).json({
+                message: "If an unverified account exists, a verification email will be sent."
+            });
+        }
+
+        if(existingUser.isVerified){
+            return res.status(200).json({
+                message: "If an unverified account exists, a verification email will be sent."
+            });
+        }
+
+        // Generate a new verification token and hash it
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const hashedVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+        // Save the new hashed token and new expiration
+        existingUser.verificationToken = hashedVerificationToken;
+        existingUser.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+        // Save updated variables to User
+        await existingUser.save();
+
+        // Use the token to create your new verification link
+        const verificationLink = 'http://localhost:5001/api/auth/verify-email?token=' + verificationToken;
+
+        // Send email to user with verification link whch will expire in 24 hours from now
+         await sendEmail(
+            normEmail,
+            "Verify your GymBros account",
+            "Click this link to verify your email: " + verificationLink
+        );
+
+        return res.status(200).json({
+            message: "If an unverified account exists, a verification email will be sent."
+        });
+
+
+    }catch(error){
+
+        console.error('Email verification error', error);
+        return res.status(500).json({ message: 'Email verification error' });
+
+    }
+
+});
+
+
+
+
+
 
 
 
