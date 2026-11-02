@@ -21,12 +21,12 @@ router.post('/signup', async (req, res) => {
     const password = req.body.password;
 
     // Validate that all required fields are provided
-    if (typeof username !== "string" || 
-        username.trim().length === 0 || 
-        typeof email !== "string" || 
-        email.trim().length === 0 || 
+    if (typeof username !== "string" ||
+        username.trim().length === 0 ||
+        typeof email !== "string" ||
+        email.trim().length === 0 ||
         typeof password !== "string" ||
-         password.trim().length === 0) {
+        password.trim().length === 0) {
         return res.status(400).json({ message: 'Please fill out all fields!' });
     }
 
@@ -80,7 +80,7 @@ router.post('/signup', async (req, res) => {
         const verificationLink = 'http://localhost:5001/api/auth/verify-email?token=' + verificationToken;
 
         // Send email to user with verification link whch will expire in 24 hours
-         await sendEmail(
+        await sendEmail(
             normEmail,
             "Verify your GymBros account",
             "Click this link to verify your email: " + verificationLink
@@ -137,7 +137,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
 
-        if(!existingUser.isVerified){
+        if (!existingUser.isVerified) {
             return res.status(403).json({ message: 'Please verify your email before logging in.' });
         }
 
@@ -145,7 +145,7 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign(
             { userId: existingUser._id.toString() },
             process.env.JWT_SECRET,
-            { expiresIn: '1h'}
+            { expiresIn: '1h' }
         );
 
         // Return the token to the frontend
@@ -161,7 +161,7 @@ router.post('/login', async (req, res) => {
 
 
 
-    
+
 });
 
 // GET /api/auth/me
@@ -170,20 +170,20 @@ router.post('/login', async (req, res) => {
 // Returns the user's ID, username, and email without exposing their password.
 router.get('/me', authMiddleware, async (req, res) => {
 
-    try{
-    
-    // Find the authenticated user using the ID provided by authMiddleware
-    const existingUser = await User.findById(req.userId)
+    try {
 
-    // Handle accounts that no longer exist
-    if(existingUser === null){
-        return res.status(404).json({message: 'User not found'});
-    }
+        // Find the authenticated user using the ID provided by authMiddleware
+        const existingUser = await User.findById(req.userId)
 
-    // Return only the user information needed by the frontend
-    return res.status(200).json({id: existingUser._id, username: existingUser.username, email: existingUser.email});
+        // Handle accounts that no longer exist
+        if (existingUser === null) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-    }catch(error){
+        // Return only the user information needed by the frontend
+        return res.status(200).json({ id: existingUser._id, username: existingUser.username, email: existingUser.email });
+
+    } catch (error) {
 
         console.error('Internal error', error);
         return res.status(500).json({ message: 'Internal server error' })
@@ -194,22 +194,22 @@ router.get('/verify-email', async (req, res) => {
 
     const token = req.query.token;
 
-    if(!token|| typeof token !== "string" ){
+    if (!token || typeof token !== "string") {
         return res.status(400).json({
-            message:'Inalid verification token.'
+            message: 'Inalid verification token.'
         });
     }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    try{
+    try {
 
-        const existingUser = await User.findOne({ 
-            verificationToken: hashedToken, 
-            verificationTokenExpires:{ $gt: Date.now() } 
+        const existingUser = await User.findOne({
+            verificationToken: hashedToken,
+            verificationTokenExpires: { $gt: Date.now() }
         })
 
-        if(existingUser === null){
+        if (existingUser === null) {
             return res.status(400).json({
                 message: 'Invalid or expired verification token'
             })
@@ -225,21 +225,21 @@ router.get('/verify-email', async (req, res) => {
             message: "Email verified successfully!"
         });
 
-     
 
 
-    }catch(error){
+
+    } catch (error) {
 
         console.error('Email verification error', error);
         return res.status(500).json({ message: 'Email verification error' })
 
     }
 
-    
+
 });
 
 //POST /api/auth/resend-verification
-router.post('/resend-verification', async (req, res)=> {
+router.post('/resend-verification', async (req, res) => {
 
     // Accept the user's email address and normalize it
     const email = req.body.email;
@@ -249,23 +249,23 @@ router.post('/resend-verification', async (req, res)=> {
             message: "Invalid email address"
         });
     }
-    
+
     const normEmail = email.trim().toLowerCase();
 
-    try{
+    try {
         // Find the matching account in MongoDB.
         const existingUser = await User.findOne({
             email: normEmail
         });
 
         // Check wether user exists
-        if(existingUser === null ){
+        if (existingUser === null) {
             return res.status(404).json({
                 message: "If an unverified account exists, a verification email will be sent."
             });
         }
 
-        if(existingUser.isVerified){
+        if (existingUser.isVerified) {
             return res.status(200).json({
                 message: "If an unverified account exists, a verification email will be sent."
             });
@@ -286,7 +286,7 @@ router.post('/resend-verification', async (req, res)=> {
         const verificationLink = 'http://localhost:5001/api/auth/verify-email?token=' + verificationToken;
 
         // Send email to user with verification link whch will expire in 24 hours from now
-         await sendEmail(
+        await sendEmail(
             normEmail,
             "Verify your GymBros account",
             "Click this link to verify your email: " + verificationLink
@@ -297,7 +297,7 @@ router.post('/resend-verification', async (req, res)=> {
         });
 
 
-    }catch(error){
+    } catch (error) {
 
         console.error('Email verification error', error);
         return res.status(500).json({ message: 'Email verification error' });
@@ -307,37 +307,98 @@ router.post('/resend-verification', async (req, res)=> {
 });
 
 
+router.post('/forgot-password', async (req, res) => {
+
+    // Get the email from req.body
+    const email = req.body.email;
+
+    // Validate that email is a nonempty string
+    if (typeof email !== "string" || email.trim().length === 0) {
+        return res.status(400).json({
+            message: "Incomplete or invalid fields"
+        });
+    }
+
+    // Normalize the email
+    const normEmail = email.trim().toLowerCase();
+
+    try {
+
+        // Find the user in MongoDB using their email
+        const existingUser = await User.findOne({
+            email: normEmail
+        });
+
+        if (existingUser === null) {
+            return res.status(200).json({
+                message: "If an account exists for this email, a password reset link will be sent."
+            });
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+        existingUser.resetPasswordToken = hashedResetToken;
+        existingUser.resetPasswordExpires = Date.now() + 60 * 60 * 1000
+
+        await existingUser.save();
+
+        // For local testing: http://localhost:5001/api/auth/reset-password?token=...
+        // Replace with password-reset page for actuall implimentation
+        const resetLink = 'http://localhost:5001/api/auth/reset-password?token=' + resetToken;
+
+        await sendEmail(
+            normEmail,
+            "Forger Password Link",
+            "Click here to reset your password: " + resetLink
+        );
+
+        return res.status(200).json({
+            message: "If an account exists for this email, a password reset link will be sent."
+        });
+
+    } catch (error) {
+
+        // Log the error for debugging and Return a 500 response for unexpected server errors
+        console.error('Forget password error', error);
+        return res.status(500).json({ message: 'Password error' });
+
+    }
+});
+
+
+
 router.post('/reset-password', async (req, res) => {
 
     // Retrieve the reset token and new password from the request
     const resetToken = req.body.token;
     const password = req.body.password;
-  
+
     // Validate that both values are nonempty strings
-    if(typeof resetToken !== "string" || resetToken.trim().length !== 0 || typeof password !== "string" || password.trim().length !== 0){
+    if (typeof resetToken !== "string" || resetToken.trim().length === 0 || typeof password !== "string" || password.trim().length === 0) {
         return res.status(400).json({ message: 'Please fill out all fields!' });
     }
 
     // Validate the new password using your existing passwordRegex
-     if (!passwordRegex.test(password)) {
+    if (!passwordRegex.test(password)) {
         return res.status(400).json({ message: 'Your Password does not meet requirements' })
     }
-   
+
     // Hash the incoming reset token using SHA-256
     const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     try {
 
         // Find the user whose stored resetPasswordToken matches AND whose resetPasswordExpires is in the future
-        const existingUser = User.findOne({
+        const existingUser = await User.findOne({
             resetPasswordToken: hashedResetToken,
-            resetPasswordExpires:{ $gt: Date.now() } 
+            resetPasswordExpires: { $gt: Date.now() }
 
         })
 
         // If no matching user exists, return 400
         // with an invalid or expired token message
-        if(existingUser === null){
+        if (existingUser === null) {
             return res.status(400).json({
                 message: "Invalid or expired token"
             });
@@ -358,12 +419,12 @@ router.post('/reset-password', async (req, res) => {
 
         // 11. Return 200 with a password reset success message
         // Do not automatically log the user in
-        return res.status(200).json({message: "Password reset was successful"})
+        return res.status(200).json({ message: "Password reset was successful" })
 
     } catch (error) {
 
         // Log unexpected errors and Return 500 for internal server errors
-            console.error('Password reset error', error);
+        console.error('Password reset error', error);
         return res.status(500).json({ message: 'Password reset error' });
     }
 });
