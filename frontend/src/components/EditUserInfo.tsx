@@ -3,7 +3,7 @@ import showPswdIcon from "../assets/showPswdIcon.png"
 import hidePswdIcon from "../assets/hidePswdIcon.png"
 import Icon from "./Icon";
 
-type UserInfoProfileSectionProps = {
+type EditUserInfoProps = {
     name: string;
     username: string;
     email: string;
@@ -11,7 +11,7 @@ type UserInfoProfileSectionProps = {
     onChange: (inputName: "name" | "username" | "email" | "password", value: string) => void;
 }
 
-export default function UserInfoProfileSection({name, username, email, password, onChange}: UserInfoProfileSectionProps) {
+export default function EditUserInfo({name, username, email, password, onChange}: EditUserInfoProps) {
     const [showPswd, setShowPswd] = useState(false);
 
     function togglePasswordVisibility() {

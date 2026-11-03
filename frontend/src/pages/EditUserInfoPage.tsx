@@ -12,7 +12,7 @@ export default function EditUserInfoPage() {
     const [name, setName] = useState("John Gymborough");
     const [username, setUsername] = useState("Jymbro20");
     const [email, setEmail] = useState("johnGym@gmail.com");
-    const [password, setPassword] = useState("");
+    const [password, setPassword] = useState("hello123");
 
 
     function handleChange(inputName: "name" | "username" | "email" | "password", value: string) {
