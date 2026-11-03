@@ -48,7 +48,7 @@ export default function FriendsPage() {
       />
       <div className={panel}>
         <div className={toolbar}>
-          <Link to="/" className={backButton}>
+          <Link to="/home-page" className={backButton}>
             Back
           </Link>
           <label className={searchField}>

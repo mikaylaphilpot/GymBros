@@ -25,7 +25,7 @@ export default function ProfilePage() {
             <WorkoutScheduleProfileSection title="Workout Schedule" workouts=""/> {/* hopefully i can j link the user's workouts from the database then parse them in the widget? Like pass an array of saved workouts then pull dif parts of it out in the component to display it corrcetly? idk*/}
             <UserInfoProfileSection title="User Information" name="John Gymborough" username="Jymbro20" email="johnGym@gmail.com" password="hello123" />
 
-            <RoutingButton label="Sign Out" routingTo="/home-page" iconSrc="" normalButton={1}/>
+            <RoutingButton label="Sign Out" routingTo="/" iconSrc="" normalButton={1}/>
 
         </div>
 
