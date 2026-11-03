@@ -1,0 +1,310 @@
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    background-image: url(../assets/Background.png);
+    background-repeat: repeat;
+}
+
+.white-container {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    text-align: start;
+    gap: 15px;
+    padding: 30px 60px;
+
+    min-height: 100vh;
+    box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
+    background-color: white;
+
+    container-type: inline-size; 
+}
+
+.container-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.condensed-white-container {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: start;
+    gap: 15px;
+    padding: 30px 60px;
+
+    min-height: 50vh;
+    width: 50vw;
+    box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
+    background-color: white;
+    border-radius: 20px;
+    
+    container-type: inline-size; 
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 50px;
+    margin-bottom: 10px;
+
+    color: #000000;
+}
+
+.header h1 {
+    font-size: 55px;
+}
+
+.header h2 {
+    font-size: 40px;
+    text-decoration-line: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: 6px;
+    text-decoration-color: #B31517;
+    text-underline-offset: 5px;
+}
+
+p {
+    color: #000000;
+}
+
+.header .no-gap-group-horizontal {
+    margin-left: auto;
+    gap: 40px;
+}
+
+.no-gap-group-horizontal {
+    display: flex;
+    flex-direction: row;
+}
+
+.no-gap-group-vertical {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-no-gap-group {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+
+}
+
+.profile-no-gap-group img {
+    height: 50px;
+    width: 50px;
+}
+
+.line-divider{
+    background-color: #B31517;
+    height: 8px;
+    border: 0;
+    margin: 0;
+  
+}
+
+.bros-schedule-box, .user-schedule-box {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.general-text, .profile-information-box p {
+    font-size: 34px;
+    color: #000000;
+    padding: 10px 0px 20px 0px;
+    line-height: 35px;
+}
+
+.bro-workout-widget, .user-workout-widget {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    font-size: 28px; 
+    font-weight: bold;
+    line-height: 35px;
+    color: #000000;
+    
+    border-style: solid;
+    border-radius: 20px;
+    border-color: #B31517;
+    border-width: 6px;
+    padding: 15px;
+}
+
+.bro-workout-widget .iconImage, .user-workout-widget .iconImage, .checkbox-label {
+    margin-left: auto;  
+}
+
+.checkbox-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.checkbox {
+  transform: scale(2.0);
+  -webkit-transform: scale(2.0);
+  accent-color: #61B315; 
+
+  margin: 10px; 
+}
+
+.user-schedule-box {
+    padding-bottom: 100px;
+}
+
+.overdue {
+    background-color: #FF9294;
+}
+
+.completed {
+    background-color: #C7F4AA;
+    border-color: #61B315;
+}
+
+.default {
+    background-color: #FFFFFF;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    text-decoration: none;
+    font-weight: bold;
+    color: #000000;
+}
+
+.normal-button {
+    margin: 30px auto 90px auto;
+    padding: 15px;
+    width: 180px;
+    height: 30px;
+    text-decoration: none;
+    text-align: center;
+
+    background-color: #B31517;
+    color: #FFFFFF;
+    font-size: 30px;
+    font-weight: bold;
+    border-radius: 20px;    
+}
+
+.left-align-button {
+    margin-right: auto;
+}
+
+.password-toggle {
+    border: none;
+    background: transparent;
+    padding: 4px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+
+.profile-schedule-box, .profile-information-box {
+    margin-top: 60px;
+}
+
+.profile-information-box {
+    margin-bottom: 80px;
+}
+
+.profile-schedule-widgets, .profile-information-box p, .edit-profile-box{
+    font-size: 25px;
+}
+
+.edit-profile-box {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+
+    color: #000000;
+}
+
+.edit-profile-box-item input {
+    font-size: 25px;
+    padding: 10px;
+    background-color: #D9D9D9;
+    border-style: none;
+    
+}
+
+.schedule-checkboxes {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    margin: 30px auto;
+
+
+    font-size: 25px;
+}
+
+.schedule-item-header, .schedule-item-box {
+    display: flex;
+    flex-direction: row;
+}
+
+.schedule-item-header h2 {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.schedule-item-box {
+    gap: 20px;
+    font-size: 20px;
+}
+
+.schedule-item-box input {
+    padding: 10px;
+    font-size: 20px;
+    border-style: none;
+    background-color: #D9D9D9;
+    width: 30cqw;
+}
+
+.schedule-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.forget-password-box {
+    display: flex;
+    flex-direction: column;
+    color: #000000;
+}
+
+.forget-password-box input {
+    padding: 10px;
+    font-size: 20px;
+    border-style: none;
+    background-color: #D9D9D9;
+    width: 90cqw;
+    height: 40px;
+}
+
+.pswd-page-routing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    margin: 30px auto 0px auto;
+    text-decoration: none;
+}
