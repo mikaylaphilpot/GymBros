@@ -16,6 +16,7 @@ function createTestServer(sendNotification = async () => undefined) {
   app.use('/api/notifications', createNotificationRouter({
     store,
     pushClient: { sendNotification },
+    allowDevTest: true,
   }));
   app.use((error, _req, res, _next) => res.status(500).json({ message: error.message }));
   const server = http.createServer(app);
@@ -97,4 +98,25 @@ test('removes expired subscriptions', async () => {
   });
   assert.equal(result.status, 410);
   assert.equal(await server.store.findByUserId('user-3'), null);
+});
+
+test('sends a test notification to the authenticated user', async () => {
+  let sentPayload;
+  const server = createTestServer((_subscription, payload) => {
+    sentPayload = JSON.parse(payload);
+  });
+  await server.store.save('user-4', subscription);
+
+  const result = await request(server.server, '/api/notifications/test', {
+    method: 'POST',
+    headers: { 'x-user-id': 'user-4' },
+    body: JSON.stringify({}),
+  });
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(sentPayload, {
+    title: 'GymBros Test',
+    body: 'Time to train!',
+    url: '/',
+  });
 });

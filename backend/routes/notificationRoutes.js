@@ -6,7 +6,15 @@ function getUserId(req) {
   return typeof userId === 'string' && userId.trim().length > 0 ? userId.trim() : null;
 }
 
-function createNotificationRouter({ store, pushClient = webpush }) {
+function createPayload({ messageText, title, url }) {
+  return JSON.stringify({
+    title: typeof title === 'string' && title.trim() ? title.trim() : 'GymBros Notification',
+    body: messageText.trim(),
+    url: typeof url === 'string' && url.trim() ? url.trim() : '/',
+  });
+}
+
+function createNotificationRouter({ store, pushClient = webpush, allowDevTest = false }) {
   if (!store) {
     throw new TypeError('A push subscription store is required');
   }
@@ -50,12 +58,7 @@ function createNotificationRouter({ store, pushClient = webpush }) {
         return res.status(404).json({ message: 'User is not subscribed to notifications' });
       }
 
-      const payload = JSON.stringify({
-        title: typeof title === 'string' && title.trim() ? title.trim() : 'GymBros Notification',
-        body: messageText.trim(),
-        url: typeof url === 'string' && url.trim() ? url.trim() : '/',
-      });
-
+      const payload = createPayload({ messageText, title, url });
       await pushClient.sendNotification(record.subscription, payload);
       return res.status(200).json({ message: 'Notification sent successfully' });
     } catch (error) {
@@ -66,6 +69,42 @@ function createNotificationRouter({ store, pushClient = webpush }) {
       return next(error);
     }
   });
+
+  if (allowDevTest) {
+    router.post('/test', async (req, res, next) => {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication is required' });
+    }
+
+    const messageText = typeof req.body?.messageText === 'string' && req.body.messageText.trim()
+      ? req.body.messageText
+      : 'Time to train!';
+
+    try {
+      const record = await store.findByUserId(userId);
+      if (!record) {
+        return res.status(404).json({ message: 'Your browser is not subscribed to notifications' });
+      }
+
+      await pushClient.sendNotification(
+        record.subscription,
+        createPayload({
+          messageText,
+          title: req.body?.title || 'GymBros Test',
+          url: req.body?.url || '/',
+        }),
+      );
+      return res.status(200).json({ message: 'Test notification sent successfully' });
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 410) {
+        await store.deleteByUserId(userId);
+        return res.status(410).json({ message: 'Your notification subscription is no longer valid' });
+      }
+      return next(error);
+    }
+    });
+  }
 
   return router;
 }

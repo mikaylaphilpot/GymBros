@@ -7,6 +7,7 @@ import express, {
   type NextFunction,
 } from "express";
 import { MongoClient } from "mongodb";
+import webpush from "web-push";
 import { connectToMongoDB } from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -17,6 +18,18 @@ import {
 import { createNotificationRouter } from "./routes/notificationRoutes.js";
 
 dotenv.config();
+// Set the VAPID details for web push notifications
+if (
+   process.env.VAPID_PUBLIC_KEY &&
+   process.env.VAPID_PRIVATE_KEY &&
+   process.env.VAPID_SUBJECT
+ ) {
+   webpush.setVapidDetails(
+     process.env.VAPID_SUBJECT,
+     process.env.VAPID_PUBLIC_KEY,
+     process.env.VAPID_PRIVATE_KEY,
+   );
+ }
 
 declare global {
   namespace Express {
@@ -85,7 +98,13 @@ async function startServer() {
     console.warn("MONGODB_URI is not configured; using in-memory push subscriptions");
   }
 
-  app.use("/api/notifications", createNotificationRouter({ store }));
+  app.use(
+    "/api/notifications",
+    createNotificationRouter({
+      store,
+      allowDevTest: process.env.ALLOW_DEV_USER_HEADER === "true",
+    }),
+  );
   const errorHandler: ErrorRequestHandler = (
     error: StatusError,
     _req: Request,
