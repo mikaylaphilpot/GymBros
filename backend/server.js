@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { MongoClient } = require('mongodb');
+const { connectToMongoDB } = require('./config/db');
+const authRouter = require('./routes/authRoutes');
 const {
   createInMemoryPushSubscriptionStore,
   createMongoPushSubscriptionStore,
@@ -14,10 +16,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-//Test API
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
+
+app.use('/api/auth', authRouter);
 
 if (process.env.ALLOW_DEV_USER_HEADER === 'true') {
   app.use((req, _res, next) => {
@@ -43,7 +46,9 @@ function createUnavailableStore() {
 async function startServer() {
   let client;
   let store = createInMemoryPushSubscriptionStore();
+
   if (process.env.MONGODB_URI) {
+    await connectToMongoDB();
     client = new MongoClient(process.env.MONGODB_URI);
     await client.connect();
     store = createMongoPushSubscriptionStore(
