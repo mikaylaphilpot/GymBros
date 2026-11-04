@@ -1,6 +1,26 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose"
 
-const UserSchema = new mongoose.Schema({
+// AI-assisted: Initial Implementation suggested by Copilot
+export interface IUser {
+  username: string;
+  email: string;
+  password: string;
+  isVerified: boolean;
+  verificationToken: string;
+  resetPasswordToken: String;
+  resetPasswordExpires: Date;
+  streakCount: number;
+  lastWorkoutCompletedAt: Date;
+  friends: IFriends[];
+}
+
+export interface IFriends {
+  friendId: mongoose.Types.ObjectId;
+  bugCount: number;
+  lastBuggedAt: Date | null;
+}
+
+const UserSchema = new mongoose.Schema<IUser>({
   username: {
     type: String,
     required: true,
@@ -65,4 +85,4 @@ const UserSchema = new mongoose.Schema({
 // Partial text/regex index for user search ("Find Your Bros")
 UserSchema.index({ username: 'text' });
 
-module.exports = mongoose.model('User', UserSchema);
+export default mongoose.model<IUser>("User", UserSchema);
