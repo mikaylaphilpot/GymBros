@@ -9,6 +9,12 @@ export interface FriendDetails {
   lastBuggedAt: Date | null;
 }
 
+interface UserFriend {
+  friendId: mongoose.Types.ObjectId | null;
+  bugCount: number;
+  lastBuggedAt: Date | null;
+}
+
 // AI-assisted: Initial Implementation suggested by Copilot
 export async function getFriends(
   currentUserId: string
@@ -26,7 +32,7 @@ export async function getFriends(
   }
 
   return user.friends
-    .map((friend) => {
+    .map((friend: UserFriend) => {
       const populatedFriend = friend.friendId as unknown as {
         _id: mongoose.Types.ObjectId;
         username: string;
@@ -46,7 +52,10 @@ export async function getFriends(
         lastBuggedAt: friend.lastBuggedAt,
       };
     })
-    .filter((friend): friend is FriendDetails => friend !== null);
+    .filter(
+      (friend: FriendDetails | null): friend is FriendDetails =>
+        friend !== null,
+    );
 }
 
 // AI-assisted: Initial Implementation suggested by Copilot

@@ -1,6 +1,11 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express from "express";
+import express, {
+  type ErrorRequestHandler,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import { MongoClient } from "mongodb";
 import { connectToMongoDB } from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
@@ -12,6 +17,15 @@ import {
 import { createNotificationRouter } from "./routes/notificationRoutes.js";
 
 dotenv.config();
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { id: string };
+      userId?: string;
+    }
+  }
+}
 
 const app = express();
 app.use(cors());
@@ -34,21 +48,29 @@ if (process.env.ALLOW_DEV_USER_HEADER === "true") {
   });
 }
 
-function createUnavailableStore() {
+type PushSubscriptionStore = ReturnType<
+  typeof createInMemoryPushSubscriptionStore
+>;
+
+interface StatusError extends Error {
+  statusCode?: number;
+}
+
+function createUnavailableStore(): PushSubscriptionStore {
   return {
-    save: async () => {
+    save: async (_userId, _subscription) => {
       const error = new Error("MongoDB is not configured");
-      error.statusCode = 503;
+      (error as StatusError).statusCode = 503;
       throw error;
     },
     findByUserId: async () => null,
-    deleteByUserId: async () => undefined,
+    deleteByUserId: async () => ({ deletedCount: 0 }),
   };
 }
 
 async function startServer() {
   let client: MongoClient | undefined;
-  let store = createInMemoryPushSubscriptionStore();
+  let store: PushSubscriptionStore = createInMemoryPushSubscriptionStore();
 
   if (process.env.MONGODB_URI) {
     await connectToMongoDB();
@@ -64,10 +86,20 @@ async function startServer() {
   }
 
   app.use("/api/notifications", createNotificationRouter({ store }));
-  app.use((error: Error & { statusCode?: number }, _req, res, _next) => {
-    const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+  const errorHandler: ErrorRequestHandler = (
+    error: StatusError,
+    _req: Request,
+    res: Response,
+    _next: NextFunction,
+  ) => {
+    const statusCode = error.statusCode;
+    const status =
+      statusCode !== undefined && Number.isInteger(statusCode)
+        ? statusCode
+        : 500;
     res.status(status).json({ message: error.message || "Internal server error" });
-  });
+  };
+  app.use(errorHandler);
 
   const port = Number(process.env.PORT) || 5001;
   const server = app.listen(port, () => {
