@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    index: true // Optimized for partial-match search requirement
+    index: true
   },
   email: {
     type: String,
@@ -16,12 +16,12 @@ const UserSchema = new mongoose.Schema({
     trim: true
   },
   password: {
-    type: String, // Stored as a bcrypt hash by the backend
+    type: String,
     required: true
   },
   isVerified: {
     type: Boolean,
-    default: false // For email verification requirement
+    default: false
   },
   verificationToken: {
     type: String,
@@ -41,13 +41,12 @@ const UserSchema = new mongoose.Schema({
   },
   streakCount: {
     type: Number,
-    default: 0 // Weekly/daily streak count
+    default: 0
   },
   lastWorkoutCompletedAt: {
     type: Date,
     default: null
   },
-  // Sub-document array to manage Bros & Bug tracking
   friends: [
     {
       friendId: {
@@ -56,7 +55,7 @@ const UserSchema = new mongoose.Schema({
       },
       bugCount: {
         type: Number,
-        default: 0 // Increments when you click "Bug"
+        default: 0
       },
       lastBuggedAt: {
         type: Date,
@@ -66,7 +65,6 @@ const UserSchema = new mongoose.Schema({
   ]
 }, { timestamps: true });
 
-// Partial text/regex index for user search ("Find Your Bros")
 UserSchema.index({ username: 'text' });
 
 module.exports = mongoose.model('User', UserSchema);
