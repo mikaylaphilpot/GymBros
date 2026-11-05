@@ -1,13 +1,12 @@
 import mongoose, { Schema, Types, model } from 'mongoose';
 
-interface Friend {
+export interface IFriend {
   friendId: Types.ObjectId;
   bugCount: number;
   lastBuggedAt: Date | null;
 }
 
-// This interface describes fields stored by the Mongoose User model.
-interface User {
+export interface IUser {
   username: string;
   email: string;
   password: string;
@@ -18,16 +17,16 @@ interface User {
   resetPasswordExpires: Date | null;
   streakCount: number;
   lastWorkoutCompletedAt: Date | null;
-  friends: Friend[];
+  friends: IFriend[];
 }
 
-const UserSchema = new Schema<User>({
+const UserSchema = new Schema<IUser>({
   username: {
     type: String,
     required: true,
     unique: true,
     trim: true,
-    index: true // Optimized for partial-match search requirement
+    index: true
   },
   email: {
     type: String,
@@ -37,12 +36,12 @@ const UserSchema = new Schema<User>({
     trim: true
   },
   password: {
-    type: String, // Stored as a bcrypt hash by the backend
+    type: String,
     required: true
   },
   isVerified: {
     type: Boolean,
-    default: false // For email verification requirement
+    default: false
   },
   verificationToken: {
     type: String,
@@ -62,13 +61,12 @@ const UserSchema = new Schema<User>({
   },
   streakCount: {
     type: Number,
-    default: 0 // Weekly/daily streak count
+    default: 0
   },
   lastWorkoutCompletedAt: {
     type: Date,
     default: null
   },
-  // Sub-document array to manage Bros & Bug tracking
   friends: [
     {
       friendId: {
@@ -77,7 +75,7 @@ const UserSchema = new Schema<User>({
       },
       bugCount: {
         type: Number,
-        default: 0 // Increments when you click "Bug"
+        default: 0
       },
       lastBuggedAt: {
         type: Date,
@@ -87,7 +85,6 @@ const UserSchema = new Schema<User>({
   ]
 }, { timestamps: true });
 
-// Partial text/regex index for user search ("Find Your Bros")
 UserSchema.index({ username: 'text' });
 
-export default model<User>('User', UserSchema);
+export default model<IUser>('User', UserSchema);

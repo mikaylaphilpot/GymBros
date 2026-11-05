@@ -1,7 +1,6 @@
 import mongoose, { Schema, Types, model } from 'mongoose';
 
-// The day union keeps schedule entries limited to the seven calendar days.
-interface Schedule {
+export interface ISchedule {
   userId: Types.ObjectId;
   dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
   startTime: string;
@@ -10,7 +9,7 @@ interface Schedule {
   isCompletedToday: boolean;
 }
 
-const ScheduleSchema = new Schema<Schedule>({
+const ScheduleSchema = new Schema<ISchedule>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -23,15 +22,15 @@ const ScheduleSchema = new Schema<Schedule>({
     required: true
   },
   startTime: {
-    type: String, // e.g., "12:00 PM"
+    type: String,
     required: true
   },
   endTime: {
-    type: String, // e.g., "1:00 PM"
+    type: String,
     required: true
   },
   activity: {
-    type: String, // e.g., "Gym - Strength training", "Swim", "Walk"
+    type: String,
     required: true
   },
   isCompletedToday: {
@@ -40,4 +39,4 @@ const ScheduleSchema = new Schema<Schedule>({
   }
 }, { timestamps: true });
 
-export default model<Schedule>('Schedule', ScheduleSchema);
+export default model<ISchedule>('Schedule', ScheduleSchema);
