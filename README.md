@@ -10,6 +10,12 @@ cp backend/.env.example backend/.env
 
 `backend/.env` is ignored by Git. Keep real credentials there locally, or configure `MONGODB_URI` as an environment variable in your deployment environment. Never commit the real connection string.
 
+## Backend development
+
+The backend runs from TypeScript files. The original JavaScript files are preserved as reference copies in `backend/legacy-js/`; they are not used by the server. Comments in the TypeScript files describe how each part works.
+
+From the `backend/` directory, run `npm run dev` for watch mode, `npm run typecheck` to check types, or `npm run build` followed by `npm start` to run the compiled server.
+
 ## Authentication API
 
 Base URL: `http://localhost:5001/api/auth`
