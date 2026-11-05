@@ -8,6 +8,7 @@ interface Friend {
 
 // This interface describes fields stored by the Mongoose User model.
 interface User {
+  name: string;
   username: string;
   email: string;
   password: string;
@@ -22,6 +23,13 @@ interface User {
 }
 
 const UserSchema = new Schema<User>({
+  name: {
+    type: String,
+    required: true,
+    default: '',
+    trim: true,
+    maxlength: 100
+  },
   username: {
     type: String,
     required: true,
