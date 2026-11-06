@@ -31,9 +31,9 @@ async function startServer(): Promise<void> {
     // Establish database connection using config/db.js
     await connectToMongoDB();
 
-    // Start listening for incoming requests on port 5001
-    app.listen(5001, () => {
-      console.log('Server running on port 5001');
+    const port = Number(process.env.PORT) || 5001;
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
 
   } catch (error: unknown) {
