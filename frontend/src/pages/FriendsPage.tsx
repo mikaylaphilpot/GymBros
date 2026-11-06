@@ -10,6 +10,7 @@ import vertMenu from "../assets/vertMenu.png"
 import { deleteFriend, getCurrentUserId, getFriendsByStats, type Friend, type FriendsByStats } from "../api/friends"
 import AddFriends from "./AddFriends"
 
+// Styling for the FriendsPage component and its child elements.
 const page = "relative min-h-dvh overflow-x-hidden"
 const background = "pointer-events-none fixed inset-0 size-full object-cover"
 const panel =
