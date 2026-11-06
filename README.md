@@ -28,6 +28,26 @@ The Android client, including instructions for running it, configuring the API, 
 
 Base URL: `http://localhost:5001/api/auth`
 
+### Signup verification email configuration
+
+Signup sends the verification link to the email address submitted by the new
+user through GymBros's server-side SMTP account. SMTP credentials belong to
+GymBros, not to individual users, and must stay in the backend `.env` file.
+
+For SendGrid SMTP, verify a sender identity in SendGrid and configure:
+
+```text
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=<SendGrid API key>
+SMTP_FROM=<verified sender email>
+PUBLIC_API_URL=http://137.184.142.16:5001
+```
+
+Use an HTTPS domain for `PUBLIC_API_URL` before production deployment. Never
+commit or share the API key, SMTP password, or populated `.env` file.
+
 ### POST /signup
 Creates a new user account.
 
