@@ -105,6 +105,7 @@ export default function FriendsPage() {
   const [isRemoving, setIsRemoving] = useState("")
   const [error, setError] = useState("")
 
+  // Resolve the signed-in user before requesting their friend list.
   useEffect(() => {
     let active = true
 
@@ -149,6 +150,7 @@ export default function FriendsPage() {
         ].filter((friend): friend is Friend => friend !== null)
       : []
 
+    // Featured friends may also appear in the regular list; show each person once.
     return allFriends.filter((friend, index) =>
       allFriends.findIndex((candidate) => candidate.friendId === friend.friendId) === index,
     )
@@ -182,6 +184,7 @@ export default function FriendsPage() {
     setIsRemoving(friend.friendId)
 
     try {
+      // Reload the list after removal so featured-friend sections stay up to date.
       await deleteFriend(currentUserId, friend.friendId)
       await refreshFriends()
     } catch (removeError) {

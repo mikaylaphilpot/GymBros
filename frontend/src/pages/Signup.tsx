@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
 import { signup } from "../api/auth"
 
+// Styling for the SignUp component and its child elements.
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
 const background =
@@ -33,6 +34,7 @@ export default function SignUp() {
     const email = String(formData.get("email") ?? "").trim()
     const password = String(formData.get("password") ?? "")
 
+    // Check the required fields and password rules before sending the signup request.
     if (!username || !email || !password) {
       setError("Please fill out all fields.")
       return

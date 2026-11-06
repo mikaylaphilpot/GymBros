@@ -40,6 +40,7 @@ function getAuthToken(): string {
   return token
 }
 
+// Friend-list and friend-action routes require the signed-in user's bearer token.
 function getAuthHeaders(): HeadersInit {
   return { Authorization: `Bearer ${getAuthToken()}` }
 }
@@ -67,6 +68,7 @@ async function requestJson(
   return payload
 }
 
+// Validate API data before using it as a typed friend record.
 function isFriend(value: unknown): value is Friend {
   return (
     isRecord(value) &&
@@ -104,6 +106,7 @@ export async function getCurrentUserId(): Promise<string> {
     headers: { Authorization: `Bearer ${token}` },
   })
 
+  // Get the account ID from the token-backed endpoint rather than trusting client input.
   if (!isRecord(payload) || typeof payload.id !== "string") {
     throw new Error("The server returned invalid account data.")
   }
@@ -137,6 +140,7 @@ export async function getFriendsByStats(currentUserId: string): Promise<FriendsB
     { headers: getAuthHeaders() },
   )
 
+  // Check each response field before exposing the friend data to the UI.
   if (
     !isRecord(payload) ||
     !Array.isArray(payload.otherFriends) ||

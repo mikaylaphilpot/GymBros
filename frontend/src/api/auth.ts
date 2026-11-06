@@ -15,6 +15,7 @@ function isApiResponse(value: unknown): value is ApiResponse {
   )
 }
 
+// Send login and signup data through the same response-validation path.
 async function postAuth(
   endpoint: "login" | "signup",
   body: Record<string, string>,
@@ -46,6 +47,7 @@ async function postAuth(
 export async function login(email: string, password: string): Promise<string> {
   const result = await postAuth("login", { email, password })
 
+  // Login requires a token so later requests can authenticate the user.
   if (!result.token) {
     throw new Error("The server did not return an authentication token.")
   }

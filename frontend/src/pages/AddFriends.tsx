@@ -39,6 +39,7 @@ export default function AddFriends({
   const [message, setMessage] = useState("")
   const friendIdSet = new Set(friendIds)
 
+  // Debounce username searches and ignore results from searches that have been replaced.
   useEffect(() => {
     let active = true
     const searchQuery = query.trim()
@@ -77,6 +78,7 @@ export default function AddFriends({
     }
   }, [currentUserId, query])
 
+  // Refresh the parent list after adding so the new friend is reflected immediately.
   async function handleAdd(user: UserSearchResult) {
     setPendingFriendId(user.id)
     setError("")

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router"
 import { login } from "../api/auth"
 
+// Styling for the Login component and its child elements.
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
 const background =
@@ -45,6 +46,7 @@ export default function Login() {
 
     try {
       const token = await login(email, password)
+      // Keep the token available for authenticated API requests during this session.
       sessionStorage.setItem("authToken", token)
       navigate("/home-page")
     } catch (submitError) {
