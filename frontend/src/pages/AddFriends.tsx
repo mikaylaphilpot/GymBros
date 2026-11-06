@@ -10,20 +10,20 @@ type AddFriendsProps = {
 }
 
 const overlay =
-  "fixed inset-0 z-40 flex items-center justify-center bg-black/55 p-4"
+  "fixed inset-0 z-40 flex items-center justify-center bg-black/55 p-2"
 const popup =
-  "flex min-h-[560px] max-h-[90dvh] w-full max-w-[560px] flex-col overflow-y-auto rounded-xl bg-white px-9 py-10 shadow-[0_4px_16px_#000]"
+  "flex min-h-[320px] max-h-[88dvh] w-full max-w-[340px] flex-col overflow-y-auto rounded-lg bg-white px-4 py-5 shadow-[0_4px_16px_#000]"
 const title =
-  "self-start font-['Inter:Bold'] text-[36px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-8"
-const description = "mt-6 text-left text-[20px]"
+  "self-start font-['Inter:Bold'] text-[21px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
+const description = "mt-2 text-left text-[13px]"
 const searchField =
-  "mt-5 flex h-12 items-center gap-3 rounded-[10px] border-2 border-[#919191] px-3"
+  "mt-2.5 flex h-8 items-center gap-1.5 rounded-md border-2 border-[#919191] px-2"
 const searchInput =
-  "min-w-0 flex-1 bg-transparent text-[20px] outline-none placeholder:text-black"
+  "min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-black"
 const closeButton =
-  "mt-6 h-12 w-[130px] self-center rounded-lg bg-[#b31517] text-[20px] font-bold text-white transition hover:bg-[#951214]"
+  "mt-3.5 h-8 w-[84px] self-center rounded-md bg-[#b31517] text-[13px] font-bold text-white transition hover:bg-[#951214]"
 const resultButton =
-  "rounded-lg bg-[#b31517] px-4 py-2 font-semibold text-white hover:bg-[#951214] disabled:cursor-not-allowed disabled:bg-gray-400"
+  "rounded-md bg-[#b31517] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#951214] disabled:cursor-not-allowed disabled:bg-gray-400"
 
 export default function AddFriends({
   currentUserId,
@@ -112,7 +112,7 @@ export default function AddFriends({
             src={searchImage}
             alt=""
             aria-hidden="true"
-            className="size-5"
+            className="size-3.5"
           />
           <input
             value={query}
@@ -123,7 +123,7 @@ export default function AddFriends({
           />
         </label>
 
-        <div className="mt-4" aria-live="polite">
+        <div className="mt-2 text-xs" aria-live="polite">
           {isSearching && <p className="text-center text-gray-700">Searching...</p>}
           {!isSearching && query.trim() && results.length === 0 && !error && (
             <p className="text-center text-gray-700">No users found.</p>
@@ -135,7 +135,7 @@ export default function AddFriends({
               return (
                 <li
                   key={user.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-gray-300 px-4 py-3"
+                  className="flex items-center justify-between gap-2 rounded-md border border-gray-300 px-2 py-1"
                 >
                   <span className="min-w-0 truncate">{user.username}</span>
                   <button

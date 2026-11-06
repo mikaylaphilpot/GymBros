@@ -14,22 +14,22 @@ import AddFriends from "./AddFriends"
 const page = "relative min-h-dvh overflow-x-hidden"
 const background = "pointer-events-none fixed inset-0 size-full object-cover"
 const panel =
-  "relative mx-auto min-h-dvh w-full max-w-[964px] bg-white px-6 pb-12 pt-6 shadow-[0_4px_25px_#000] sm:px-14 lg:px-[70px]"
-const toolbar = "flex flex-wrap items-center gap-4"
-const backButton = "mr-auto text-[28px] text-[#546ac0] hover:underline"
+  "relative mx-auto min-h-dvh w-full max-w-[600px] bg-white px-4 pb-6 pt-3 shadow-[0_4px_16px_#000] sm:px-7 lg:px-8"
+const toolbar = "flex flex-wrap items-center gap-2"
+const backButton = "mr-auto text-base text-[#546ac0] hover:underline"
 const searchField =
-  "order-3 flex h-[62px] w-full items-center gap-3 rounded-[10px] border-2 border-[#919191] px-4 sm:order-none sm:w-auto sm:flex-1"
+  "order-3 flex h-9 w-full items-center gap-2 rounded-md border-2 border-[#919191] px-2 sm:order-none sm:w-auto sm:flex-1"
 const searchInput =
-  "min-w-0 flex-1 border-0 bg-transparent text-[26px] outline-none placeholder:text-black"
+  "min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-black"
 const addButton =
-  "rounded-[20px] border border-[#ccc] bg-[#b31517] px-6 py-3 text-[25px] text-white hover:bg-[#951214]"
+  "rounded-lg border border-[#ccc] bg-[#b31517] px-3 py-1.5 text-sm text-white hover:bg-[#951214]"
 const title =
-  "mt-10 block text-left font-['Inter:Bold'] text-[60px]! leading-tight font-bold underline decoration-[#B31517] decoration-[12.5%] underline-offset-8 sm:text-[70px]!"
-const sectionTitle = "text-left text-[28px] leading-none"
+  "mt-5 block text-left font-['Inter:Bold'] text-[30px]! leading-tight font-bold underline decoration-[#B31517] decoration-[12.5%] underline-offset-4 sm:text-[34px]!"
+const sectionTitle = "text-left text-lg leading-none"
 const menuButton =
-  "rounded-full p-2 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-[#b31517]"
+  "rounded-full p-1.5 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-[#b31517]"
 const menuAction =
-  "w-full whitespace-nowrap px-4 py-2 text-left text-sm text-[#b31517] hover:bg-red-50 disabled:opacity-50"
+  "w-full whitespace-nowrap px-3 py-1.5 text-left text-xs text-[#b31517] hover:bg-red-50 disabled:opacity-50"
 
 type FriendCardProps = {
   friend: Friend
@@ -49,17 +49,17 @@ function FriendCard({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <li className="flex items-center justify-between gap-4 border-b border-gray-200 py-3 text-left">
-      <div className="flex min-w-0 items-center gap-3">
+    <li className="flex items-center justify-between gap-2 border-b border-gray-200 py-1.5 text-left">
+      <div className="flex min-w-0 items-center gap-1.5">
         <img
           src={achievementIcon ?? brosIcon}
           alt=""
           aria-hidden="true"
-          className="size-10 shrink-0 object-contain"
+          className="size-6 shrink-0 object-contain"
         />
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold">{friend.username}</p>
-          <p className="text-sm text-gray-700">{statistic}</p>
+          <p className="truncate text-[13px] font-semibold">{friend.username}</p>
+          <p className="text-xs text-gray-700">{statistic}</p>
         </div>
       </div>
       <div className="relative shrink-0">
@@ -71,7 +71,7 @@ function FriendCard({
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen((open) => !open)}
         >
-          <img src={vertMenu} alt="" aria-hidden="true" className="size-6 object-contain" />
+          <img src={vertMenu} alt="" aria-hidden="true" className="size-3.5 object-contain" />
         </button>
         {isMenuOpen && (
           <div
@@ -203,10 +203,10 @@ export default function FriendsPage() {
     achievementIcon: string,
   ) {
     return (
-      <section className="mb-7">
+      <section className="mb-3">
         <header className="border-b border-black/55 pb-2 text-left">
           <h2 className={sectionTitle}>{heading}</h2>
-          <p className="text-base">{subtitle}</p>
+          <p className="text-sm">{subtitle}</p>
         </header>
         {friend
           ? (
@@ -220,14 +220,14 @@ export default function FriendsPage() {
                 />
               </ul>
             )
-          : <p className="py-3 text-left text-gray-600">No friend found.</p>}
+          : <p className="py-2 text-left text-sm text-gray-600">No friend found.</p>}
       </section>
     )
   }
 
   function renderOtherFriends(list: Friend[]) {
     return (
-      <section className="mb-7">
+      <section className="mb-3">
         <header className="border-b border-black/55 pb-2 text-left">
           <h2 className={sectionTitle}>Regular Bros</h2>
         </header>
@@ -245,7 +245,7 @@ export default function FriendsPage() {
                 ))}
               </ul>
             )
-          : <p className="py-3 text-left text-gray-600">No regular bros found.</p>}
+          : <p className="py-2 text-left text-sm text-gray-600">No regular bros found.</p>}
       </section>
     )
   }
@@ -266,7 +266,7 @@ export default function FriendsPage() {
               src={searchImage}
               alt=""
               aria-hidden="true"
-              className="size-[25px]"
+              className="size-5"
             />
             <input
               value={query}
@@ -296,7 +296,7 @@ export default function FriendsPage() {
                 </p>
               )
             : (
-              <div className="mt-9">
+              <div className="mt-4">
                 {visibleFriends.length === 0 && (
                   <p className="mb-5 text-left text-gray-700">You haven&apos;t added any bros yet.</p>
                 )}

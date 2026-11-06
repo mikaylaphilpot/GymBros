@@ -5,19 +5,19 @@ import { signup } from "../api/auth"
 
 // Styling for the SignUp component and its child elements.
 const page =
-  "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
+  "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-y-auto px-3 py-4"
 const background =
   "pointer-events-none absolute inset-0 h-full w-full object-cover"
 const form =
-  "relative z-10 flex w-full max-w-[679px] flex-col rounded-[20px] bg-white px-[clamp(24px,8.1vw,117px)] pb-[clamp(28px,4vw,36px)] pt-[clamp(34px,6.7vw,61px)] shadow-[0_4px_25px_#000]"
+  "relative z-10 flex w-full max-w-[440px] flex-col rounded-xl bg-white px-[clamp(20px,5vw,56px)] pb-5 pt-6 shadow-[0_4px_20px_#000]"
 const title =
-  "mb-[25px] text-center font-['Inter:Bold'] text-[clamp(40px,3vw,50px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-8"
+  "mb-4 text-center font-['Inter:Bold'] text-[clamp(26px,2vw,34px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
 const input =
-  "h-[92px] w-full appearance-none rounded border border-gray-400 bg-[#d9d9d9] px-6 font-['Inter:Regular'] text-[clamp(22px,2.08vw,30px)] font-normal text-black placeholder:text-[#a59f9f] shadow-none outline-none focus-visible:border-[#b31517] focus-visible:ring-2 focus-visible:ring-[#b31517]"
+  "h-[52px] w-full appearance-none rounded border border-gray-400 bg-[#d9d9d9] px-4 font-['Inter:Regular'] text-[clamp(16px,1.4vw,19px)] font-normal text-black placeholder:text-[#a59f9f] shadow-none outline-none focus-visible:border-[#b31517] focus-visible:ring-2 focus-visible:ring-[#b31517]"
 const button =
-  "mt-[23px] h-[83px] w-[235px] self-center rounded-[20px] border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[40px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
+  "mt-4 h-[52px] w-[145px] self-center rounded-xl border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[22px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
 const link =
-  "mt-4 self-center font-['Inter:Regular'] text-[20px] font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
+  "mt-3 self-center font-['Inter:Regular'] text-sm font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
 
 export default function SignUp() {
   const [error, setError] = useState("")
@@ -103,7 +103,7 @@ export default function SignUp() {
           type="email"
           autoComplete="email"
           placeholder="Email"
-          className={`mt-[25px] ${input}`}
+          className={`mt-3 ${input}`}
         />
 
         <label htmlFor="password" className="sr-only">
@@ -115,10 +115,10 @@ export default function SignUp() {
           type="password"
           autoComplete="new-password"
           placeholder="Password"
-          className={`mt-[25px] ${input}`}
+          className={`mt-3 ${input}`}
         />
 
-        <p className="mt-2 text-sm text-gray-700">
+        <p className="mt-1.5 text-[11px] leading-4 text-gray-700">
           Use at least 8 characters, including uppercase and lowercase letters, a
           number, and one of these symbols: @$!%*?&amp;. No spaces or other characters.
         </p>
