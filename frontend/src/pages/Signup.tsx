@@ -79,7 +79,7 @@ export default function SignUp() {
       >
         <h1 className={title}>Become a Bro!</h1>
 
-        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-red-700">{error}</p>}
+        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-[#B31517]!">{error}</p>}
         {message && <p role="status" aria-live="polite" className="mb-4 text-center text-green-700">{message}</p>}
 
         <label htmlFor="username" className="sr-only">

@@ -67,7 +67,7 @@ export default function Login() {
       >
         <h1 className={title}>Welcome Back Bro!</h1>
 
-        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-red-700">{error}</p>}
+        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-[#B31517]!">{error}</p>}
 
         <label htmlFor="identifier" className="sr-only">
           Email or username
