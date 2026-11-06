@@ -1,22 +1,68 @@
 import loginBackground from "../assets/Background.png"
+import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
+import { signup } from "../api/auth"
 
+// Styling for the SignUp component and its child elements.
 const page =
-  "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
+  "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-y-auto px-3 py-4"
 const background =
   "pointer-events-none absolute inset-0 h-full w-full object-cover"
 const form =
-  "relative z-10 flex w-full max-w-[679px] flex-col rounded-[20px] bg-white px-[clamp(24px,8.1vw,117px)] pb-[clamp(28px,4vw,36px)] pt-[clamp(34px,6.7vw,61px)] shadow-[0_4px_25px_#000]"
+  "relative z-10 flex w-full max-w-[440px] flex-col rounded-xl bg-white px-[clamp(20px,5vw,56px)] pb-5 pt-6 shadow-[0_4px_20px_#000]"
 const title =
-  "mb-[25px] text-center font-['Inter:Bold'] text-[clamp(40px,3vw,50px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-8"
+  "mb-4 text-center font-['Inter:Bold'] text-[clamp(26px,2vw,34px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
 const input =
-  "h-[92px] w-full appearance-none rounded border border-gray-400 bg-[#d9d9d9] px-6 font-['Inter:Regular'] text-[clamp(22px,2.08vw,30px)] font-normal text-black placeholder:text-[#a59f9f] shadow-none outline-none focus-visible:border-[#b31517] focus-visible:ring-2 focus-visible:ring-[#b31517]"
+  "h-[52px] w-full appearance-none rounded border border-gray-400 bg-[#d9d9d9] px-4 font-['Inter:Regular'] text-[clamp(16px,1.4vw,19px)] font-normal text-black placeholder:text-[#a59f9f] shadow-none outline-none focus-visible:border-[#b31517] focus-visible:ring-2 focus-visible:ring-[#b31517]"
 const button =
-  "mt-[23px] h-[83px] w-[235px] self-center rounded-[20px] border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[40px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
+  "mt-4 h-[52px] w-[145px] self-center rounded-xl border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[22px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
 const link =
-  "mt-4 self-center font-['Inter:Regular'] text-[20px] font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
+  "mt-3 self-center font-['Inter:Regular'] text-sm font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
 
 export default function SignUp() {
+  const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setMessage("")
+
+    const formData = new FormData(event.currentTarget)
+    const username = String(formData.get("username") ?? "").trim()
+    const email = String(formData.get("email") ?? "").trim()
+    const password = String(formData.get("password") ?? "")
+
+    // Check the required fields and password rules before sending the signup request.
+    if (!username || !email || !password) {
+      setError("Please fill out all fields.")
+      return
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      setError("Please enter a valid email address.")
+      return
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      setError(
+        "Use 8+ characters with uppercase and lowercase letters, a number, and at least one of these symbols: @$!%*?&. No spaces or other characters.",
+      )
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      setMessage(await signup(username, email, password))
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to create your account.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <main className={page}>
       <img
@@ -27,10 +73,14 @@ export default function SignUp() {
       />
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
+        noValidate
         className={form}
       >
         <h1 className={title}>Become a Bro!</h1>
+
+        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-[#B31517]!">{error}</p>}
+        {message && <p role="status" aria-live="polite" className="mb-4 text-center text-green-700">{message}</p>}
 
         <label htmlFor="username" className="sr-only">
           Username
@@ -40,7 +90,6 @@ export default function SignUp() {
           name="username"
           type="text"
           autoComplete="username"
-          required
           placeholder="Username"
           className={input}
         />
@@ -53,26 +102,41 @@ export default function SignUp() {
           name="email"
           type="email"
           autoComplete="email"
-          required
           placeholder="Email"
-          className={`mt-[25px] ${input}`}
+          className={`mt-3 ${input}`}
         />
 
         <label htmlFor="password" className="sr-only">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          placeholder="Password"
-          className={`mt-[25px] ${input}`}
-        />
+        <div className="group relative mt-3">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Password"
+            className={`${input} pr-12`}
+          />
+          <button
+            type="button"
+            aria-label="Show password requirements"
+            className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[#B31517] text-sm font-bold text-[#B31517] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B31517]"
+          >
+            ?
+          </button>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-64 rounded bg-white px-3 py-2 text-left text-xs leading-5 font-medium text-[#B31517] shadow-lg ring-1 ring-[#B31517] group-hover:block group-focus-within:block"
+          >
+            Use 8+ characters with uppercase and lowercase letters, a number,
+            and at least one of these symbols: @$!%*?&amp;. No spaces or other
+            characters.
+          </span>
+        </div>
 
-        <button type="submit" className={button}>
-          Sign Up
+        <button type="submit" className={button} disabled={isSubmitting}>
+          {isSubmitting ? "Signing Up..." : "Sign Up"}
         </button>
 
         <Link to="/" className={link}>
