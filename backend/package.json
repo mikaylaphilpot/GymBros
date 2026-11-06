@@ -4,15 +4,9 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch server.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikaylaphilpot/GymBros.git"
+    "start": "tsx server.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,19 +21,11 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
-    "jsonwebtoken": "^9.0.3",
-    "mongodb": "^7.7.0",
-    "mongoose": "^9.11.3",
-    "nodemailer": "^10.3.1"
+    "mongoose": "^9.11.3"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^26.6.5",
-    "@types/nodemailer": "^6.4.17",
-    "nodemon": "^3.1.14",
+    "@types/node": "^26.6.6",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }

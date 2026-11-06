@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { searchUsers } from "../api/search.js";
-import { addFriend } from "../api/addFriend.js";
-import { deleteFriend } from "../api/deleteFriend.js";
-import { getFriendsByStats } from "../api/getFriends.js";
+import { searchUsers } from "../api/search.ts";
+import { addFriend } from "../api/addFriend.ts";
+import { deleteFriend } from "../api/deleteFriend.ts";
+import { getFriendsByStats } from "../api/getFriends.ts";
 
 const router = Router();
 

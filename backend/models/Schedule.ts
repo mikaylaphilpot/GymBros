@@ -1,15 +1,16 @@
-import mongoose, { Schema, Types, model } from 'mongoose';
+import mongoose from "mongoose"
 
+// AI-assisted: Initial Implementation suggested by Copilot
 export interface ISchedule {
-  userId: Types.ObjectId;
-  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+  userId: mongoose.Schema.Types.ObjectId,
+  dayOfWeek: string,
   startTime: string;
   endTime: string;
   activity: string;
   isCompletedToday: boolean;
 }
 
-const ScheduleSchema = new Schema<ISchedule>({
+const ScheduleSchema = new mongoose.Schema<ISchedule>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -22,15 +23,15 @@ const ScheduleSchema = new Schema<ISchedule>({
     required: true
   },
   startTime: {
-    type: String,
+    type: String, // e.g., "12:00 PM"
     required: true
   },
   endTime: {
-    type: String,
+    type: String, // e.g., "1:00 PM"
     required: true
   },
   activity: {
-    type: String,
+    type: String, // e.g., "Gym - Strength training", "Swim", "Walk"
     required: true
   },
   isCompletedToday: {
@@ -39,4 +40,4 @@ const ScheduleSchema = new Schema<ISchedule>({
   }
 }, { timestamps: true });
 
-export default model<ISchedule>('Schedule', ScheduleSchema);
+export default mongoose.model("Schedule", ScheduleSchema);
