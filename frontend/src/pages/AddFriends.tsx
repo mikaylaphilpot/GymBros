@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react"
 import searchImage from "../assets/Search.png"
+import { addFriend, searchUsers, type UserSearchResult } from "../api/friends"
 
 type AddFriendsProps = {
+  currentUserId: string
+  friendIds: string[]
   onClose: () => void
+  onAdded: () => Promise<void>
 }
 
 const overlay =
@@ -16,9 +21,78 @@ const searchField =
 const searchInput =
   "min-w-0 flex-1 bg-transparent text-[20px] outline-none placeholder:text-black"
 const closeButton =
-  "mt-auto h-12 w-[130px] self-center rounded-lg bg-[#b31517] text-[20px] font-bold text-white transition hover:bg-[#951214]"
+  "mt-6 h-12 w-[130px] self-center rounded-lg bg-[#b31517] text-[20px] font-bold text-white transition hover:bg-[#951214]"
+const resultButton =
+  "rounded-lg bg-[#b31517] px-4 py-2 font-semibold text-white hover:bg-[#951214] disabled:cursor-not-allowed disabled:bg-gray-400"
 
-export default function AddFriends({ onClose }: AddFriendsProps) {
+export default function AddFriends({
+  currentUserId,
+  friendIds,
+  onClose,
+  onAdded,
+}: AddFriendsProps) {
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<UserSearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [pendingFriendId, setPendingFriendId] = useState("")
+  const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
+  const friendIdSet = new Set(friendIds)
+
+  useEffect(() => {
+    let active = true
+    const searchQuery = query.trim()
+
+    const timeout = setTimeout(async () => {
+      if (!searchQuery) {
+        setResults([])
+        setIsSearching(false)
+        setError("")
+        return
+      }
+
+      setIsSearching(true)
+      setError("")
+
+      try {
+        const users = await searchUsers(searchQuery, currentUserId)
+        if (active) {
+          setResults(users)
+        }
+      } catch (searchError) {
+        if (active) {
+          setError(searchError instanceof Error ? searchError.message : "Unable to search users.")
+          setResults([])
+        }
+      } finally {
+        if (active) {
+          setIsSearching(false)
+        }
+      }
+    }, searchQuery ? 250 : 0)
+
+    return () => {
+      active = false
+      clearTimeout(timeout)
+    }
+  }, [currentUserId, query])
+
+  async function handleAdd(user: UserSearchResult) {
+    setPendingFriendId(user.id)
+    setError("")
+    setMessage("")
+
+    try {
+      const result = await addFriend(currentUserId, user.id)
+      setMessage(result.message)
+      await onAdded()
+    } catch (addError) {
+      setError(addError instanceof Error ? addError.message : "Unable to add this friend.")
+    } finally {
+      setPendingFriendId("")
+    }
+  }
+
   return (
     <div
       className={overlay}
@@ -27,13 +101,10 @@ export default function AddFriends({ onClose }: AddFriendsProps) {
       aria-labelledby="add-bros-title"
     >
       <div className={popup}>
-        <h2
-          id="add-bros-title"
-          className={title}
-        >
-          Add Bros
-        </h2>
+        <h2 id="add-bros-title" className={title}>Add Bros</h2>
         <p className={description}>Add a bro using their username.</p>
+        {error && <p role="alert" className="mt-4 text-center text-red-700">{error}</p>}
+        {message && <p role="status" className="mt-4 text-center text-green-700">{message}</p>}
         <label className={searchField}>
           <img
             src={searchImage}
@@ -42,15 +113,44 @@ export default function AddFriends({ onClose }: AddFriendsProps) {
             className="size-5"
           />
           <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Find your Bro"
             className={searchInput}
+            aria-label="Search users by username"
           />
         </label>
-        <button
-          type="button"
-          onClick={onClose}
-          className={closeButton}
-        >
+
+        <div className="mt-4" aria-live="polite">
+          {isSearching && <p className="text-center text-gray-700">Searching...</p>}
+          {!isSearching && query.trim() && results.length === 0 && !error && (
+            <p className="text-center text-gray-700">No users found.</p>
+          )}
+          <ul className="space-y-2">
+            {results.map((user) => {
+              const isFriend = friendIdSet.has(user.id)
+
+              return (
+                <li
+                  key={user.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-gray-300 px-4 py-3"
+                >
+                  <span className="min-w-0 truncate">{user.username}</span>
+                  <button
+                    type="button"
+                    className={resultButton}
+                    disabled={isFriend || pendingFriendId === user.id}
+                    onClick={() => void handleAdd(user)}
+                  >
+                    {isFriend ? "Added" : pendingFriendId === user.id ? "Adding..." : "Add"}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+
+        <button type="button" onClick={onClose} className={closeButton}>
           Close
         </button>
       </div>
