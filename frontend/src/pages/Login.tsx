@@ -1,5 +1,7 @@
 import loginBackground from "../assets/Background.png"
-import { Link } from "react-router"
+import { Link, useLocation, useNavigate } from "react-router"
+import { useState } from "react"
+import { logIn } from "../utils/authApi"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -17,6 +19,30 @@ const button =
   "mt-[23px] h-[83px] w-[235px] self-center rounded-[20px] border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[40px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
 
 export default function Login() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const successMessage =
+    (location.state as { message?: string } | null)?.message
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setIsSubmitting(true)
+
+    try {
+      await logIn(username.trim(), password)
+      navigate("/home-page")
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Login failed.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <main className={page}>
       <img
@@ -27,20 +53,28 @@ export default function Login() {
       />
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
         className={form}
       >
         <h1 className={title}>Welcome Back Bro!</h1>
 
-        <label htmlFor="email" className="sr-only">
-          Email
+        {successMessage && (
+          <p className="mb-4 text-left text-green-700">{successMessage}</p>
+        )}
+        {error && <p className="mb-4 text-left text-[#b31517]">{error}</p>}
+
+        <label htmlFor="username" className="sr-only">
+          Username
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder="Email"
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          placeholder="Username"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          required
           className={input}
         />
 
@@ -53,6 +87,9 @@ export default function Login() {
           type="password"
           autoComplete="current-password"
           placeholder="Password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
           className={`mt-[45px] ${input}`}
         />
 
@@ -63,8 +100,8 @@ export default function Login() {
           Forget Password?
         </Link>
 
-        <button type="submit" className={button}>
-          Sign In
+        <button type="submit" disabled={isSubmitting} className={button}>
+          {isSubmitting ? "Signing In..." : "Sign In"}
         </button>
 
         <Link

@@ -1,5 +1,7 @@
 import loginBackground from "../assets/Background.png"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
+import { useState } from "react"
+import { signUp } from "../utils/authApi"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -17,6 +19,30 @@ const link =
   "mt-4 self-center font-['Inter:Regular'] text-[20px] font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
 
 export default function SignUp() {
+  const navigate = useNavigate()
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setIsSubmitting(true)
+
+    try {
+      await signUp(username.trim(), email.trim(), password)
+      navigate("/", {
+        state: { message: "Account created. Check your email to verify it, then sign in." },
+      })
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Sign up failed.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <main className={page}>
       <img
@@ -27,10 +53,12 @@ export default function SignUp() {
       />
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
         className={form}
       >
         <h1 className={title}>Become a Bro!</h1>
+
+        {error && <p className="mb-4 text-left text-[#b31517]">{error}</p>}
 
         <label htmlFor="username" className="sr-only">
           Username
@@ -42,6 +70,8 @@ export default function SignUp() {
           autoComplete="username"
           required
           placeholder="Username"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
           className={input}
         />
 
@@ -55,6 +85,8 @@ export default function SignUp() {
           autoComplete="email"
           required
           placeholder="Email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           className={`mt-[25px] ${input}`}
         />
 
@@ -68,11 +100,13 @@ export default function SignUp() {
           autoComplete="new-password"
           required
           placeholder="Password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
           className={`mt-[25px] ${input}`}
         />
 
-        <button type="submit" className={button}>
-          Sign Up
+        <button type="submit" disabled={isSubmitting} className={button}>
+          {isSubmitting ? "Signing Up..." : "Sign Up"}
         </button>
 
         <Link to="/" className={link}>

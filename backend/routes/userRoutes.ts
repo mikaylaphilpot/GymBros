@@ -1,23 +1,24 @@
-import { Router } from "express";
-import { searchUsers } from "../api/search.ts";
-import { addFriend } from "../api/addFriend.ts";
-import { deleteFriend } from "../api/deleteFriend.ts";
-import { getFriendsByStats } from "../api/getFriends.ts";
+import { Router, type Request } from "express";
+import authMiddleware from "../middleware/authMiddleware.js";
+import { searchUsers } from "../api/search.js";
+import { addFriend } from "../api/addFriend.js";
+import { deleteFriend } from "../api/deleteFriend.js";
+import { getFriendsByStats } from "../api/getFriends.js";
 
 const router = Router();
 
-// AI-assisted: Initial Implementation suggested by Copilot
+router.use(authMiddleware);
+
+function getAuthenticatedUserId(req: Request) {
+  return (req as Request & { userId?: string }).userId;
+}
+
 router.get("/search", async (req, res) => {
   try {
     const searchContents =
       typeof req.query.q === "string" ? req.query.q : "";
 
-    const currentUserId =
-      typeof req.query.currentUserId === "string"
-        ? req.query.currentUserId
-        : undefined;
-
-    const users = await searchUsers(searchContents, currentUserId);
+    const users = await searchUsers(searchContents, getAuthenticatedUserId(req));
 
     res.json(users);
   } catch (error) {
@@ -26,9 +27,12 @@ router.get("/search", async (req, res) => {
   }
 });
 
-// AI-assisted: Initial Implementation suggested by Copilot
 router.get("/:currentUserId/friends/stats", async (req, res) => {
   try {
+    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
+      return res.status(403).json({ message: "You may only access your own friends." });
+    }
+
     const stats = await getFriendsByStats(req.params.currentUserId);
 
     res.json(stats);
@@ -42,9 +46,12 @@ router.get("/:currentUserId/friends/stats", async (req, res) => {
   }
 });
 
-// AI-assisted: Initial Implementation suggested by Copilot
 router.post("/:currentUserId/friends/:friendId", async (req, res) => {
   try {
+    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
+      return res.status(403).json({ message: "You may only manage your own friends." });
+    }
+
     const result = await addFriend(req.params.currentUserId, req.params.friendId);
 
     res.status(result.added ? 201 : 200).json(result);
@@ -58,9 +65,12 @@ router.post("/:currentUserId/friends/:friendId", async (req, res) => {
   }
 });
 
-// AI-assisted: Initial Implementation suggested by Copilot
 router.delete("/:currentUserId/friends/:friendId", async (req, res) => {
   try {
+    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
+      return res.status(403).json({ message: "You may only manage your own friends." });
+    }
+
     const result = await deleteFriend(req.params.currentUserId, req.params.friendId);
 
     res.status(result.deleted ? 200 : 404).json(result);

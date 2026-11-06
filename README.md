@@ -1,11 +1,15 @@
 # GymBros
 
+GymBros is a MERN web application with a planned Flutter mobile client. The
+backend includes the Express API scaffold, MongoDB configuration, and push
+notification endpoints.
+
 ## Backend database configuration
 
-Copy `backend/.env.example` to `backend/.env` and replace the placeholder with your MongoDB connection string:
+Create a local `backend/.env` file with your MongoDB connection string:
 
-```sh
-cp backend/.env.example backend/.env
+```text
+MONGODB_URI=<local or remote MongoDB connection string>
 ```
 
 `backend/.env` is ignored by Git. Keep real credentials there locally, or configure `MONGODB_URI` as an environment variable in your deployment environment. Never commit the real connection string.
@@ -23,6 +27,26 @@ The Android client, including instructions for running it, configuring the API, 
 ## Authentication API
 
 Base URL: `http://localhost:5001/api/auth`
+
+### Signup verification email configuration
+
+Signup sends the verification link to the email address submitted by the new
+user through GymBros's server-side SMTP account. SMTP credentials belong to
+GymBros, not to individual users, and must stay in the backend `.env` file.
+
+For SendGrid SMTP, verify a sender identity in SendGrid and configure:
+
+```text
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=<SendGrid API key>
+SMTP_FROM=<verified sender email>
+PUBLIC_API_URL=http://137.184.142.16:5001
+```
+
+Use an HTTPS domain for `PUBLIC_API_URL` before production deployment. Never
+commit or share the API key, SMTP password, or populated `.env` file.
 
 ### POST /signup
 Creates a new user account.
@@ -67,3 +91,56 @@ Errors:
 ### Upcoming Features
 - Email verification
 - Password reset
+
+## Local web push notification test
+
+This test requires the backend and frontend `.env` files to contain the
+MongoDB, VAPID, and `VITE_API_BASE_URL` values from their `.env.example`
+templates. Do not commit either populated `.env` file.
+
+Start the backend in one terminal:
+
+```powershell
+Push-Location backend
+npm run dev
+```
+
+Start the frontend in a second terminal:
+
+```powershell
+Push-Location frontend
+npm run dev
+```
+
+Open `http://localhost:5173/notifications-test` in Chrome or Edge, not the
+VS Code embedded browser. Enter the recipient's MongoDB user `_id`, click
+**Enable notifications**, and allow browser notifications. After the page
+reports that notifications are enabled, click **Send test notification**.
+
+The page uses `POST /api/notifications/test`, which sends a default test
+message to the authenticated development user. The endpoint requires the
+temporary `x-user-id` identity header and therefore is for local testing only.
+The existing `POST /api/notifications/send` endpoint remains available for
+testing messages between different subscribed users.
+
+For a PowerShell API test, use the actual recipient ID and run both commands:
+
+```powershell
+$body = @{
+  targetUserId = "YOUR_MONGODB_USER_ID"
+  messageText = "Time to train!"
+  title = "GymBros Test"
+  url = "/"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Uri "http://localhost:5001/api/notifications/send" `
+  -Method Post `
+  -Headers @{ "x-user-id" = "test-sender" } `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Do not send the literal text `YOUR_MONGODB_USER_ID`; replace it with the same
+ID used on the test page. A response saying that the user is not subscribed
+means the browser subscription step did not complete for that ID.
