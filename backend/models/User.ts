@@ -1,23 +1,23 @@
 import mongoose from "mongoose"
 
-// AI-assisted: Initial Implementation suggested by Copilot
-export interface IUser {
-  username: string;
-  email: string;
-  password: string;
-  isVerified: boolean;
-  verificationToken: string;
-  resetPasswordToken: String;
-  resetPasswordExpires: Date;
-  streakCount: number;
-  lastWorkoutCompletedAt: Date;
-  friends: IFriends[];
+export interface IFriends {
+  friendId: mongoose.Types.ObjectId
+  bugCount: number
+  lastBuggedAt: Date | null
 }
 
-export interface IFriends {
-  friendId: mongoose.Types.ObjectId;
-  bugCount: number;
-  lastBuggedAt: Date | null;
+export interface IUser {
+  username: string
+  email: string
+  password: string
+  isVerified: boolean
+  verificationToken: string | null
+  verificationTokenExpires: Date | null
+  resetPasswordToken: string | null
+  resetPasswordExpires: Date | null
+  streakCount: number
+  lastWorkoutCompletedAt: Date | null
+  friends: IFriends[]
 }
 
 const UserSchema = new mongoose.Schema<IUser>({
@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema<IUser>({
     required: true,
     unique: true,
     trim: true,
-    index: true // Optimized for partial-match search requirement
+    index: true
   },
   email: {
     type: String,
@@ -36,15 +36,19 @@ const UserSchema = new mongoose.Schema<IUser>({
     trim: true
   },
   password: {
-    type: String, // Stored as a bcrypt hash by the backend
+    type: String,
     required: true
   },
   isVerified: {
     type: Boolean,
-    default: false // For email verification requirement
+    default: false
   },
   verificationToken: {
     type: String,
+    default: null
+  },
+  verificationTokenExpires: {
+    type: Date,
     default: null
   },
   resetPasswordToken: {
@@ -57,22 +61,21 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   streakCount: {
     type: Number,
-    default: 0 // Weekly/daily streak count
+    default: 0
   },
   lastWorkoutCompletedAt: {
     type: Date,
     default: null
   },
-  // Sub-document array to manage Bros & Bug tracking
   friends: [
     {
       friendId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: "User"
       },
       bugCount: {
         type: Number,
-        default: 0 // Increments when you click "Bug"
+        default: 0
       },
       lastBuggedAt: {
         type: Date,
@@ -80,9 +83,8 @@ const UserSchema = new mongoose.Schema<IUser>({
       }
     }
   ]
-}, { timestamps: true });
+}, { timestamps: true })
 
-// Partial text/regex index for user search ("Find Your Bros")
-UserSchema.index({ username: 'text' });
+UserSchema.index({ username: "text" })
 
-export default mongoose.model<IUser>("User", UserSchema);
+export default mongoose.model<IUser>("User", UserSchema)

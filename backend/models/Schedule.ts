@@ -1,43 +1,51 @@
 import mongoose from "mongoose"
 
-// AI-assisted: Initial Implementation suggested by Copilot
+export type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday"
+
 export interface ISchedule {
-  userId: mongoose.Schema.Types.ObjectId,
-  dayOfWeek: string,
-  startTime: string;
-  endTime: string;
-  activity: string;
-  isCompletedToday: boolean;
+  userId: mongoose.Types.ObjectId
+  dayOfWeek: DayOfWeek
+  startTime: string
+  endTime: string
+  activity: string
+  isCompletedToday: boolean
 }
 
 const ScheduleSchema = new mongoose.Schema<ISchedule>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
     index: true
   },
   dayOfWeek: {
     type: String,
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     required: true
   },
   startTime: {
-    type: String, // e.g., "12:00 PM"
+    type: String,
     required: true
   },
   endTime: {
-    type: String, // e.g., "1:00 PM"
+    type: String,
     required: true
   },
   activity: {
-    type: String, // e.g., "Gym - Strength training", "Swim", "Walk"
+    type: String,
     required: true
   },
   isCompletedToday: {
     type: Boolean,
     default: false
   }
-}, { timestamps: true });
+}, { timestamps: true })
 
-export default mongoose.model("Schedule", ScheduleSchema);
+export default mongoose.model<ISchedule>("Schedule", ScheduleSchema)
