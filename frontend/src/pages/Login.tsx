@@ -29,23 +29,18 @@ export default function Login() {
     setError("")
 
     const formData = new FormData(event.currentTarget)
-    const email = String(formData.get("email") ?? "").trim()
+    const identifier = String(formData.get("identifier") ?? "").trim()
     const password = String(formData.get("password") ?? "")
 
-    if (!email || !password) {
-      setError("Please enter your email and password.")
-      return
-    }
-
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setError("Please enter a valid email address.")
+    if (!identifier || !password) {
+      setError("Please enter your email or username and password.")
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const token = await login(email, password)
+      const token = await login(identifier, password)
       // Keep the token available for authenticated API requests during this session.
       sessionStorage.setItem("authToken", token)
       navigate("/home-page")
@@ -74,15 +69,15 @@ export default function Login() {
 
         {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-red-700">{error}</p>}
 
-        <label htmlFor="email" className="sr-only">
-          Email
+        <label htmlFor="identifier" className="sr-only">
+          Email or username
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder="Email"
+          id="identifier"
+          name="identifier"
+          type="text"
+          autoComplete="username"
+          placeholder="Email/Username"
           className={input}
         />
 

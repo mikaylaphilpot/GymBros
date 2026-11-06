@@ -15,6 +15,7 @@ interface SignupBody {
 // Request values start as unknown because clients can send values of any shape.
 // The runtime checks in each route prove they are strings before we use them.
 interface LoginBody {
+  identifier?: unknown;
   email?: unknown;
   username?: unknown;
   password: unknown;
@@ -135,8 +136,12 @@ router.post('/login', async (req: Request<Record<string, never>, unknown, LoginB
     return;
   }
 
-  const { email, username, password } = body;
-  const identifier = typeof email === 'string' ? email : username;
+  const { identifier: suppliedIdentifier, email, username, password } = body;
+  const identifier = typeof suppliedIdentifier === 'string'
+    ? suppliedIdentifier
+    : typeof email === 'string'
+      ? email
+      : username;
 
   if (
     typeof identifier !== 'string' || identifier.trim().length === 0 ||
@@ -146,10 +151,10 @@ router.post('/login', async (req: Request<Record<string, never>, unknown, LoginB
     return;
   }
 
-  // Accept email from the login form and usernames for existing API clients.
+  // Accept email or username, while retaining support for older API clients.
   try {
     const normalizedIdentifier = identifier.trim().toLowerCase();
-    const lookup = typeof email === 'string'
+    const lookup = emailRegex.test(normalizedIdentifier)
       ? { email: normalizedIdentifier }
       : { username: normalizedIdentifier };
     const existingUser = await User.findOne(lookup);
