@@ -44,8 +44,8 @@ async function postAuth(
   return payload
 }
 
-export async function login(email: string, password: string): Promise<string> {
-  const result = await postAuth("login", { email, password })
+export async function login(identifier: string, password: string): Promise<string> {
+  const result = await postAuth("login", { identifier, password })
 
   // Login requires a token so later requests can authenticate the user.
   if (!result.token) {
