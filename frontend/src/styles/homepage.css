@@ -1,12 +1,3 @@
-html,
-body,
-#root {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    min-height: 100%;
-}
-
 body {
     background-image: url(../assets/Background.png);
     background-repeat: repeat;
