@@ -1,5 +1,7 @@
 import loginBackground from "../assets/Background.png"
-import { Link } from "react-router"
+import { useState, type FormEvent } from "react"
+import { Link, useNavigate } from "react-router"
+import { login } from "../api/auth"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -17,6 +19,41 @@ const button =
   "mt-[23px] h-[83px] w-[235px] self-center rounded-[20px] border border-[#b31517] bg-[#b31517] font-['Inter:Regular'] text-[40px] leading-normal font-normal text-white transition-colors hover:bg-[#981214] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#b31517] active:bg-[#7d0f11]"
 
 export default function Login() {
+  const navigate = useNavigate()
+  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+
+    const formData = new FormData(event.currentTarget)
+    const email = String(formData.get("email") ?? "").trim()
+    const password = String(formData.get("password") ?? "")
+
+    if (!email || !password) {
+      setError("Please enter your email and password.")
+      return
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      setError("Please enter a valid email address.")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const token = await login(email, password)
+      sessionStorage.setItem("authToken", token)
+      navigate("/home-page")
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to log in.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <main className={page}>
       <img
@@ -27,10 +64,13 @@ export default function Login() {
       />
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
+        noValidate
         className={form}
       >
         <h1 className={title}>Welcome Back Bro!</h1>
+
+        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-red-700">{error}</p>}
 
         <label htmlFor="email" className="sr-only">
           Email
@@ -52,6 +92,7 @@ export default function Login() {
           name="password"
           type="password"
           autoComplete="current-password"
+          required
           placeholder="Password"
           className={`mt-[45px] ${input}`}
         />
@@ -63,8 +104,8 @@ export default function Login() {
           Forget Password?
         </Link>
 
-        <button type="submit" className={button}>
-          Sign In
+        <button type="submit" className={button} disabled={isSubmitting}>
+          {isSubmitting ? "Signing In..." : "Sign In"}
         </button>
 
         <Link

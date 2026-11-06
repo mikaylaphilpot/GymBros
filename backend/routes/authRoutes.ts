@@ -15,7 +15,8 @@ interface SignupBody {
 // Request values start as unknown because clients can send values of any shape.
 // The runtime checks in each route prove they are strings before we use them.
 interface LoginBody {
-  username: unknown;
+  email?: unknown;
+  username?: unknown;
   password: unknown;
 }
 
@@ -34,6 +35,10 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$
 const verificationLinkFor = (token: string): string =>
   `http://localhost:5001/api/auth/verify-email?token=${token}`;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 // MongoDB reports duplicate unique-index values with error code 11000.
 function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
@@ -44,7 +49,13 @@ function isDuplicateKeyError(error: unknown): boolean {
 // Duplicate accounts are rejected and passwords are hashed before saving.
 // A verification email is sent after the account is created.
 router.post('/signup', async (req: Request<Record<string, never>, unknown, SignupBody>, res: Response) => {
-  const { username, email, password } = req.body;
+  const body: unknown = req.body;
+  if (!isRecord(body)) {
+    res.status(400).json({ message: 'Please provide valid signup details.' });
+    return;
+  }
+
+  const { username, email, password } = body;
 
   if (
     typeof username !== 'string' || username.trim().length === 0 ||
@@ -118,19 +129,30 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 // POST /api/auth/login
 // Authenticates a user and returns a JWT that expires after one hour.
 router.post('/login', async (req: Request<Record<string, never>, unknown, LoginBody>, res: Response) => {
-  const { username, password } = req.body;
+  const body: unknown = req.body;
+  if (!isRecord(body)) {
+    res.status(400).json({ message: 'Please provide valid login details.' });
+    return;
+  }
+
+  const { email, username, password } = body;
+  const identifier = typeof email === 'string' ? email : username;
 
   if (
-    typeof username !== 'string' || username.trim().length === 0 ||
+    typeof identifier !== 'string' || identifier.trim().length === 0 ||
     typeof password !== 'string' || password.trim().length === 0
   ) {
     res.status(400).json({ message: 'Please fill out all fields!' });
     return;
   }
 
-  // Usernames are looked up without regard to capitalization.
+  // Accept email from the login form and usernames for existing API clients.
   try {
-    const existingUser = await User.findOne({ username: username.trim().toLowerCase() });
+    const normalizedIdentifier = identifier.trim().toLowerCase();
+    const lookup = typeof email === 'string'
+      ? { email: normalizedIdentifier }
+      : { username: normalizedIdentifier };
+    const existingUser = await User.findOne(lookup);
 
     // Compare the submitted password with its stored bcrypt hash.
     if (!existingUser || !(await bcrypt.compare(password, existingUser.password))) {

@@ -1,5 +1,7 @@
 import loginBackground from "../assets/Background.png"
+import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
+import { signup } from "../api/auth"
 
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-hidden px-5 py-10"
@@ -17,6 +19,48 @@ const link =
   "mt-4 self-center font-['Inter:Regular'] text-[20px] font-normal text-[#546ac0] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#546ac0]"
 
 export default function SignUp() {
+  const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setMessage("")
+
+    const formData = new FormData(event.currentTarget)
+    const username = String(formData.get("username") ?? "").trim()
+    const email = String(formData.get("email") ?? "").trim()
+    const password = String(formData.get("password") ?? "")
+
+    if (!username || !email || !password) {
+      setError("Please fill out all fields.")
+      return
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      setError("Please enter a valid email address.")
+      return
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      setError(
+        "Use 8+ characters with uppercase and lowercase letters, a number, and at least one of these symbols: @$!%*?&. No spaces or other characters.",
+      )
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      setMessage(await signup(username, email, password))
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to create your account.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <main className={page}>
       <img
@@ -27,10 +71,14 @@ export default function SignUp() {
       />
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
+        noValidate
         className={form}
       >
         <h1 className={title}>Become a Bro!</h1>
+
+        {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-red-700">{error}</p>}
+        {message && <p role="status" aria-live="polite" className="mb-4 text-center text-green-700">{message}</p>}
 
         <label htmlFor="username" className="sr-only">
           Username
@@ -40,7 +88,6 @@ export default function SignUp() {
           name="username"
           type="text"
           autoComplete="username"
-          required
           placeholder="Username"
           className={input}
         />
@@ -53,7 +100,6 @@ export default function SignUp() {
           name="email"
           type="email"
           autoComplete="email"
-          required
           placeholder="Email"
           className={`mt-[25px] ${input}`}
         />
@@ -66,13 +112,17 @@ export default function SignUp() {
           name="password"
           type="password"
           autoComplete="new-password"
-          required
           placeholder="Password"
           className={`mt-[25px] ${input}`}
         />
 
-        <button type="submit" className={button}>
-          Sign Up
+        <p className="mt-2 text-sm text-gray-700">
+          Use at least 8 characters, including uppercase and lowercase letters, a
+          number, and one of these symbols: @$!%*?&amp;. No spaces or other characters.
+        </p>
+
+        <button type="submit" className={button} disabled={isSubmitting}>
+          {isSubmitting ? "Signing Up..." : "Sign Up"}
         </button>
 
         <Link to="/" className={link}>
