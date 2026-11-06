@@ -1,10 +1,33 @@
 import { Router } from "express";
-import { searchUsers } from "../api/search.ts";
-import { addFriend } from "../api/addFriend.ts";
-import { deleteFriend } from "../api/deleteFriend.ts";
-import { getFriendsByStats } from "../api/getFriends.ts";
+import { searchUsers } from "../api/search";
+import { addFriend } from "../api/addFriend";
+import { deleteFriend } from "../api/deleteFriend";
+import { getFriendsByStats } from "../api/getFriends";
+import authMiddleware from "../middleware/authMiddleware";
+import type { Request, RequestHandler, Response } from "express";
 
 const router = Router();
+
+const requireCurrentUser: RequestHandler = (req, res, next) => {
+  if (
+    typeof req.userId !== "string" ||
+    typeof req.params.currentUserId !== "string" ||
+    req.userId !== req.params.currentUserId
+  ) {
+    return res.status(403).json({ message: "You cannot access another user's friends." });
+  }
+
+  next();
+};
+
+function getAuthenticatedUserId(req: Request, res: Response): string | undefined {
+  if (typeof req.userId !== "string") {
+    res.status(401).json({ message: "Authorization unavailable" });
+    return undefined;
+  }
+
+  return req.userId;
+}
 
 // AI-assisted: Initial Implementation suggested by Copilot
 router.get("/search", async (req, res) => {
@@ -27,9 +50,12 @@ router.get("/search", async (req, res) => {
 });
 
 // AI-assisted: Initial Implementation suggested by Copilot
-router.get("/:currentUserId/friends/stats", async (req, res) => {
+router.get("/:currentUserId/friends/stats", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+
   try {
-    const stats = await getFriendsByStats(req.params.currentUserId);
+    const stats = await getFriendsByStats(currentUserId);
 
     res.json(stats);
   } catch (error) {
@@ -43,9 +69,16 @@ router.get("/:currentUserId/friends/stats", async (req, res) => {
 });
 
 // AI-assisted: Initial Implementation suggested by Copilot
-router.post("/:currentUserId/friends/:friendId", async (req, res) => {
+router.post("/:currentUserId/friends/:friendId", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+  const friendId = req.params.friendId;
+  if (typeof friendId !== "string") {
+    return res.status(400).json({ message: "Invalid friend ID." });
+  }
+
   try {
-    const result = await addFriend(req.params.currentUserId, req.params.friendId);
+    const result = await addFriend(currentUserId, friendId);
 
     res.status(result.added ? 201 : 200).json(result);
   } catch (error) {
@@ -59,9 +92,16 @@ router.post("/:currentUserId/friends/:friendId", async (req, res) => {
 });
 
 // AI-assisted: Initial Implementation suggested by Copilot
-router.delete("/:currentUserId/friends/:friendId", async (req, res) => {
+router.delete("/:currentUserId/friends/:friendId", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+  const friendId = req.params.friendId;
+  if (typeof friendId !== "string") {
+    return res.status(400).json({ message: "Invalid friend ID." });
+  }
+
   try {
-    const result = await deleteFriend(req.params.currentUserId, req.params.friendId);
+    const result = await deleteFriend(currentUserId, friendId);
 
     res.status(result.deleted ? 200 : 404).json(result);
   } catch (error) {

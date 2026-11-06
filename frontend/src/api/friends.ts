@@ -40,6 +40,10 @@ function getAuthToken(): string {
   return token
 }
 
+function getAuthHeaders(): HeadersInit {
+  return { Authorization: `Bearer ${getAuthToken()}` }
+}
+
 async function requestJson(
   url: string,
   init?: RequestInit,
@@ -130,6 +134,7 @@ export async function searchUsers(
 export async function getFriendsByStats(currentUserId: string): Promise<FriendsByStats> {
   const payload = await requestJson(
     `${usersApiUrl}/${encodeURIComponent(currentUserId)}/friends/stats`,
+    { headers: getAuthHeaders() },
   )
 
   if (
@@ -154,7 +159,7 @@ async function postFriendAction(
 ): Promise<Record<string, unknown>> {
   const payload = await requestJson(
     `${usersApiUrl}/${encodeURIComponent(currentUserId)}/friends/${encodeURIComponent(friendId)}`,
-    { method },
+    { method, headers: getAuthHeaders() },
   )
 
   if (!isRecord(payload) || typeof payload.message !== "string") {
