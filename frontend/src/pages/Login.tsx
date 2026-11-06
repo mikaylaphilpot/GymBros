@@ -11,7 +11,7 @@ const background =
 const form =
   "relative z-10 flex w-full max-w-[440px] flex-col rounded-xl bg-white px-[clamp(20px,5vw,56px)] pb-5 pt-6 shadow-[0_4px_20px_#000]"
 const title =
-  "mb-4 text-center font-['Inter:Bold'] text-[clamp(26px,2vw,34px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
+  "mb-3 text-center font-['Inter:Bold'] text-[clamp(26px,2vw,34px)]! leading-normal font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
 const input =
   "h-[52px] w-full appearance-none rounded border border-gray-400 bg-[#d9d9d9] px-4 font-['Inter:Regular'] text-[clamp(16px,1.4vw,19px)] font-normal text-black placeholder:text-[#a59f9f] shadow-none outline-none focus-visible:border-[#b31517] focus-visible:ring-2 focus-visible:ring-[#b31517]"
 const link =
@@ -66,6 +66,9 @@ export default function Login() {
         className={form}
       >
         <h1 className={title}>Welcome Back Bro!</h1>
+        <p className="mb-4 text-center text-sm font-semibold text-[#B31517]!">
+          Email, username, and password are case-sensitive.*
+        </p>
 
         {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-[#B31517]!">{error}</p>}
 
@@ -93,7 +96,6 @@ export default function Login() {
           placeholder="Password"
           className={`mt-5 ${input}`}
         />
-
         <Link
           to="/forgot-password"
           className={`self-start leading-6 ${link}`}
