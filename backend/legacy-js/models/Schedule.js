@@ -1,16 +1,6 @@
-import mongoose from "mongoose"
+const mongoose = require('mongoose');
 
-// AI-assisted: Initial Implementation suggested by Copilot
-export interface ISchedule {
-  userId: mongoose.Schema.Types.ObjectId,
-  dayOfWeek: string,
-  startTime: string;
-  endTime: string;
-  activity: string;
-  isCompletedToday: boolean;
-}
-
-const ScheduleSchema = new mongoose.Schema<ISchedule>({
+const ScheduleSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -40,4 +30,4 @@ const ScheduleSchema = new mongoose.Schema<ISchedule>({
   }
 }, { timestamps: true });
 
-export default mongoose.model("Schedule", ScheduleSchema);
+module.exports = mongoose.model('Schedule', ScheduleSchema);

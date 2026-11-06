@@ -20,6 +20,10 @@ The backend runs from TypeScript files. The original JavaScript files are preser
 
 From the `backend/` directory, run `npm run dev` for watch mode, `npm run typecheck` to check types, or `npm run build` followed by `npm start` to run the compiled server.
 
+## Flutter app
+
+The Android client, including instructions for running it, configuring the API, and extending the auth flow, is in [`mobile/README.md`](./mobile/README.md). The website is maintained separately and is not part of this Flutter project.
+
 ## Authentication API
 
 Base URL: `http://localhost:5001/api/auth`

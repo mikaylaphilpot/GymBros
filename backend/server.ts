@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import router from './routes/authRoutes';
-import userRouter from './routes/userRoutes.js';
-import scheduleRouter from './routes/scheduleRoutes.js';
 import { connectToMongoDB } from './config/db';
+import authRouter from './routes/authRoutes';
+import scheduleRouter from './routes/scheduleRoutes';
+
 
 // Initialize Express application
 const app = express();
@@ -13,6 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
 // GET /api/test
 // Test endpoint to verify that the backend server is running
 app.get('/api/test', (req, res) => {
@@ -21,8 +22,7 @@ app.get('/api/test', (req, res) => {
 
 // Register authentication routes (signup, login, and protected user profile)
 // All auth endpoints are prefixed with /api/auth
-app.use('/api/auth', router);
-app.use('/api/users', userRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/schedules', scheduleRouter);
 
 // Connect to MongoDB before starting the Express server

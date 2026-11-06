@@ -1,0 +1,65 @@
+# GymBros Flutter client
+
+This directory contains the Android app only. The website is maintained separately.
+
+## Prerequisites
+
+- Flutter SDK (the project currently requires Dart `^3.13.7`).
+- Android Studio with an Android SDK, Android SDK Command-line Tools, and either an Android emulator or a USB-connected Android device.
+- A running GymBros backend with its MongoDB and email/SMTP configuration available. New accounts need email verification before they can sign in.
+
+Check Android setup and accept the SDK licenses with:
+
+```sh
+flutter doctor
+flutter doctor --android-licenses
+```
+
+## Run the app
+
+From this directory, fetch packages and launch an emulator or attached device:
+
+```sh
+flutter pub get
+flutter emulators
+flutter run
+```
+
+Start the backend separately from `backend/` with `npm run dev`. The Android emulator reaches the host computer through `10.0.2.2`, so the app defaults to `http://10.0.2.2:5001/api/auth/`.
+
+For a physical Android device, use the computer's LAN IP address instead. The phone and computer must be on the same network, and the computer firewall must allow the backend port:
+
+```sh
+flutter run --dart-define=API_BASE_URL=http://192.168.1.10:5001/api/auth/
+```
+
+Replace `192.168.1.10` with the computer's LAN IP. `API_BASE_URL` is the full auth API base URL and should end in `/api/auth/`. The default HTTP address and cleartext traffic are for local debug development; use an HTTPS URL for release builds:
+
+```sh
+flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/api/auth/
+```
+
+The backend permits registration only when the username and email are unused, the email is valid, and the password has at least 8 characters including an uppercase letter, lowercase letter, number, and one of `@$!%*?&`. It emails a verification link after registration. Sign-in is rejected until the user follows that link.
+
+## Authentication implementation
+
+- [`lib/main.dart`](./lib/main.dart) contains the app theme, sign-in/sign-up forms, client-side validation, loading and error states, the signed-in profile screen, and session restoration.
+- [`lib/auth/auth_service.dart`](./lib/auth/auth_service.dart) sends JSON requests to `/signup`, `/login`, and `/me`, turns server and connection failures into user-facing errors, and exposes the `AuthService` API.
+- Login stores the one-hour JWT with `flutter_secure_storage`; it is never stored in preferences or logged. On app launch the client calls `/me` with the saved bearer token to restore the profile. A `401` clears an expired token. Sign-out deletes the local token because the backend does not currently have a logout endpoint.
+- Sign-up success returns the user to sign-in and reminds them to verify their email. The backend's validation and verification responses are shown in the app.
+- The default auth base URL can be overridden with the compile-time `API_BASE_URL` Dart define. This keeps local network addresses out of the source and lets teammates use their emulator, phone, or deployed HTTPS API.
+
+When adding an authenticated API feature, add the typed request/response behavior to `AuthService` (or a separate service for non-auth endpoints), pass bearer tokens through the service rather than UI widgets, surface backend error messages, and add tests for both successful and failing responses. Keep password/token values out of logs.
+
+## Validate changes
+
+Run these commands from `mobile/` before submitting Flutter changes:
+
+```sh
+dart format lib test
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+Service request/response tests are in [`test/auth_service_test.dart`](./test/auth_service_test.dart); auth screen interaction tests are in [`test/widget_test.dart`](./test/widget_test.dart).
