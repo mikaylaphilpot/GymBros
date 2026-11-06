@@ -1,26 +1,27 @@
-import mongoose from "mongoose"
+import mongoose, { Schema, Types, model } from 'mongoose';
 
-// AI-assisted: Initial Implementation suggested by Copilot
-export interface IUser {
-  username: string;
-  email: string;
-  password: string;
-  isVerified: boolean;
-  verificationToken: string;
-  resetPasswordToken: String;
-  resetPasswordExpires: Date;
-  streakCount: number;
-  lastWorkoutCompletedAt: Date;
-  friends: IFriends[];
-}
-
-export interface IFriends {
-  friendId: mongoose.Types.ObjectId;
+interface Friend {
+  friendId: Types.ObjectId;
   bugCount: number;
   lastBuggedAt: Date | null;
 }
 
-const UserSchema = new mongoose.Schema<IUser>({
+// This interface describes fields stored by the Mongoose User model.
+interface User {
+  username: string;
+  email: string;
+  password: string;
+  isVerified: boolean;
+  verificationToken: string | null;
+  verificationTokenExpires: Date | null;
+  resetPasswordToken: string | null;
+  resetPasswordExpires: Date | null;
+  streakCount: number;
+  lastWorkoutCompletedAt: Date | null;
+  friends: Friend[];
+}
+
+const UserSchema = new Schema<User>({
   username: {
     type: String,
     required: true,
@@ -45,6 +46,10 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   verificationToken: {
     type: String,
+    default: null
+  },
+  verificationTokenExpires: {
+    type: Date,
     default: null
   },
   resetPasswordToken: {
@@ -85,4 +90,4 @@ const UserSchema = new mongoose.Schema<IUser>({
 // Partial text/regex index for user search ("Find Your Bros")
 UserSchema.index({ username: 'text' });
 
-export default mongoose.model<IUser>("User", UserSchema);
+export default model<User>('User', UserSchema);

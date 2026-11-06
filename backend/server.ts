@@ -1,16 +1,47 @@
-// backend/server.ts
-import express from "express";
-import { connectToMongoDB } from "./config/db.js";
-import userRoutes from "./routes/userRoutes.js";
+import express from 'express';
+import cors from 'cors';
+import { connectToMongoDB } from './config/db';
+import authRouter from './routes/authRoutes';
+import scheduleRouter from './routes/scheduleRoutes';
 
 
-// AI-assisted: Initial Implementation suggested by Copilot
+// Initialize Express application
 const app = express();
 
+// Enable CORS for frontend-backend communication
+// Parse incoming JSON request bodies
+app.use(cors());
 app.use(express.json());
-app.use("/api/users", userRoutes);
 
-app.listen(3001, async () => {
-  await connectToMongoDB();
-  console.log("Server running on http://localhost:3001");
+
+// GET /api/test
+// Test endpoint to verify that the backend server is running
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
 });
+
+// Register authentication routes (signup, login, and protected user profile)
+// All auth endpoints are prefixed with /api/auth
+app.use('/api/auth', authRouter);
+app.use('/api/schedules', scheduleRouter);
+
+// Connect to MongoDB before starting the Express server
+async function startServer(): Promise<void> {
+  try {
+    // Establish database connection using config/db.js
+    await connectToMongoDB();
+
+    // Start listening for incoming requests on port 5001
+    app.listen(5001, () => {
+      console.log('Server running on port 5001');
+    });
+
+  } catch (error: unknown) {
+    // Log startup errors and exit if the database connection fails
+    console.error('Server error:', error);
+    process.exit(1);
+  }
+}
+
+// Initialize the database connection and start the server
+void startServer();

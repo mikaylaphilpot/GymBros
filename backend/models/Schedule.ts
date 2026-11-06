@@ -1,16 +1,16 @@
-import mongoose from "mongoose"
+import mongoose, { Schema, Types, model } from 'mongoose';
 
-// AI-assisted: Initial Implementation suggested by Copilot
-export interface ISchedule {
-  userId: mongoose.Schema.Types.ObjectId,
-  dayOfWeek: string,
+// The day union keeps schedule entries limited to the seven calendar days.
+interface Schedule {
+  userId: Types.ObjectId;
+  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
   startTime: string;
   endTime: string;
   activity: string;
   isCompletedToday: boolean;
 }
 
-const ScheduleSchema = new mongoose.Schema<ISchedule>({
+const ScheduleSchema = new Schema<Schedule>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -40,4 +40,4 @@ const ScheduleSchema = new mongoose.Schema<ISchedule>({
   }
 }, { timestamps: true });
 
-export default mongoose.model("Schedule", ScheduleSchema);
+export default model<Schedule>('Schedule', ScheduleSchema);
