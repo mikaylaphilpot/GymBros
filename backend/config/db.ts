@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 // Load backend/.env regardless of the directory used to start the server.
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export async function connectToMongoDB(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
