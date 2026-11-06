@@ -1,4 +1,4 @@
-const apiBaseUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:5001").replace(/\/+$/, "")
+const apiBaseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")
 const authApiUrl = `${apiBaseUrl}/api/auth`
 
 interface ApiResponse {
