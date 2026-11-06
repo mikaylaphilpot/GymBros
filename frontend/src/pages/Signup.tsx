@@ -109,19 +109,31 @@ export default function SignUp() {
         <label htmlFor="password" className="sr-only">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          placeholder="Password"
-          className={`mt-3 ${input}`}
-        />
-
-        <p className="mt-1.5 text-[11px] leading-4 text-gray-700">
-          Use at least 8 characters, including uppercase and lowercase letters, a
-          number, and one of these symbols: @$!%*?&amp;. No spaces or other characters.
-        </p>
+        <div className="group relative mt-3">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Password"
+            className={`${input} pr-12`}
+          />
+          <button
+            type="button"
+            aria-label="Show password requirements"
+            className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[#B31517] text-sm font-bold text-[#B31517] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B31517]"
+          >
+            ?
+          </button>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-64 rounded bg-white px-3 py-2 text-left text-xs leading-5 font-medium text-[#B31517] shadow-lg ring-1 ring-[#B31517] group-hover:block group-focus-within:block"
+          >
+            Use 8+ characters with uppercase and lowercase letters, a number,
+            and at least one of these symbols: @$!%*?&amp;. No spaces or other
+            characters.
+          </span>
+        </div>
 
         <button type="submit" className={button} disabled={isSubmitting}>
           {isSubmitting ? "Signing Up..." : "Sign Up"}
