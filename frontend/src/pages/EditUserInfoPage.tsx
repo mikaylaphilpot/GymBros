@@ -36,23 +36,25 @@ export default function EditUserInfoPage() {
     }
 
     return (
-        <div className="white-container">
-            <div className="left-align-button">
-                <RoutingButton label="Cancel" routingTo="/profile-page" iconSrc={cancelIcon} />
-            </div>
-
-            <div className="no-gap-group-vertical">
-                <div className="header">
-                    <PageTitle label="Edit User Information" />
+        <main>
+            <div className="white-container">
+                <div className="left-align-button">
+                    <RoutingButton label="Cancel" routingTo="/profile-page" iconSrc={cancelIcon} />
                 </div>
-                <hr className="line-divider" />
+
+                <div className="no-gap-group-vertical">
+                    <div className="header">
+                        <PageTitle label="Edit User Information" />
+                    </div>
+                    <hr className="line-divider" />
+                </div>
+
+                <EditUserInfo name={name} username={username} email={email} password={password} onChange={handleChange}/>
+
+                <RoutingButton label="Save" routingTo="/profile-page" iconSrc="" normalButton={1}/>
+
             </div>
-
-            <EditUserInfo name={name} username={username} email={email} password={password} onChange={handleChange}/>
-
-            <RoutingButton label="Save" routingTo="/profile-page" iconSrc="" normalButton={1}/>
-
-        </div>
+        </main>
 
     )
 }

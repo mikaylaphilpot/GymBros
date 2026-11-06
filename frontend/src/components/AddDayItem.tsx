@@ -11,7 +11,7 @@ export default function AddDayItem({day, onAdd}: AddDayItemProps) {
     return (
         <div className="schedule-item-header general-text">
             <h2>{day}</h2>
-            <Icon src={addIcon} height={40} width={40} onClick={() => onAdd(day)}/>
+            <Icon src={addIcon} height={40} width={40} onClick={() => onAdd(day)} alt="plus-icon" />
         </div>
 
     )

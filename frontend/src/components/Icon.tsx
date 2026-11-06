@@ -5,11 +5,12 @@ type IconProps = {
     height: number;
     width: number;
     onClick?: () => void;
+    alt: string;
 }
 
-export default function Icon({src, height, width, onClick}: IconProps) {
+export default function Icon({src, height, width, onClick, alt}: IconProps) {
     return (
-        <img src={src} height={height} width={width} className="iconImage" onClick={onClick}/>
+        <img src={src} height={height} width={width} className="iconImage" onClick={onClick} alt={alt}/>
     );
 }
 

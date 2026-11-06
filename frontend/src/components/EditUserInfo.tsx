@@ -43,7 +43,7 @@ export default function EditUserInfo({name, username, email, password, onChange}
                 <input type="text" id="password" name="password" value={showPswd ? password : "*".repeat(password.length)} onChange={(event) => onChange("password", event.target.value)} />
                 
                 <button type="button" className="password-toggle" onClick={togglePasswordVisibility}>
-                    <Icon src={showPswd ? hidePswdIcon : showPswdIcon} height={20} width={20} />
+                    <Icon src={showPswd ? hidePswdIcon : showPswdIcon} height={20} width={20} alt="eye-icon"/>
                 </button>
             </div>
             

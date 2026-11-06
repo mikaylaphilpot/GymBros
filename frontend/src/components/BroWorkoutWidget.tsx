@@ -17,7 +17,7 @@ export default function BroWorkoutWidget({status, name, startTime, endTime, acti
     return (
         <div className={combined}>
             <p>{name}: {startTime} - {endTime}, {activity}</p>
-            <Icon src={icon} height={40} width={40} />
+            <Icon src={icon} height={40} width={40} alt="bug-icon"/>
         </div>
     );
 }

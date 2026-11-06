@@ -39,7 +39,7 @@ export default function UserInfoProfileSection({title, name, username, email, pa
                 {showPswd ? password : "*".repeat(password.length)}
 
                 <button type="button" className="password-toggle" onClick={togglePasswordVisibility}>
-                    <Icon src={showPswd ? hidePswdIcon : showPswdIcon} height={20} width={20} />
+                    <Icon src={showPswd ? hidePswdIcon : showPswdIcon} height={20} width={20} alt="eye-icon"/>
                 </button>
 
             </p>

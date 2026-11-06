@@ -20,7 +20,7 @@ export default function RoutingButton({label, routingTo, iconSrc, normalButton}:
     else {
         return (
             <Link to={routingTo} className="buttons">
-                <Icon src={iconSrc} height={60} width={60} />
+                <Icon src={iconSrc} height={60} width={60} alt="button-icon"/>
                 {label}
             </Link>
         );
