@@ -36,10 +36,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Welcome Back Bro!'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
 
-    await tester.tap(find.text("Don't have an account? Sign up"));
+    await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
     expect(find.text('Create your account'), findsOneWidget);
@@ -62,7 +62,7 @@ void main() {
     );
     await tester.pumpWidget(GymBrosApp(authService: service));
     await tester.pumpAndSettle();
-    await tester.tap(find.text("Don't have an account? Sign up"));
+    await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextFormField);
@@ -78,6 +78,6 @@ void main() {
       find.textContaining('Check your email to verify it'),
       findsOneWidget,
     );
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Welcome Back Bro!'), findsOneWidget);
   });
 }
