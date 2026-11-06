@@ -40,7 +40,7 @@ export default function Login() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="Email"
+          placeholder="Email/Username"
           className={input}
         />
 
