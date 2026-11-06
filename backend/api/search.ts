@@ -1,5 +1,5 @@
 
-import User from "../models/User.ts";
+import User from "../models/User.js";
 
 // AI-assisted: Initial Implementation suggested by Copilot
 function escapeRegex(value: string): string {
