@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -79,5 +80,38 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Welcome Back Bro!'), findsOneWidget);
+  });
+
+  testWidgets('signed-in users can open the translated profile page', (
+    tester,
+  ) async {
+    final authService = AuthService(
+      tokenStore: _MemoryTokenStore(),
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/login')) {
+          return http.Response(jsonEncode({'token': 'signed.jwt.token'}), 200);
+        }
+        return http.Response(
+          jsonEncode({
+            'id': 'user-id',
+            'username': 'gymbro',
+            'email': 'gymbro@example.com',
+          }),
+          200,
+        );
+      }),
+    );
+    await tester.pumpWidget(GymBrosApp(authService: authService));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'gymbro');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Password1!');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tuesday: 12:00pm - 1:00pm, Swim'), findsOneWidget);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Workout Schedule'), findsOneWidget);
   });
 }

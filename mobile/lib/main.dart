@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
@@ -8,7 +9,10 @@ void main() {
 }
 
 class GymBrosApp extends StatefulWidget {
-  const GymBrosApp({super.key, required this.authService});
+  const GymBrosApp({
+    super.key,
+    required this.authService,
+  });
 
   final AuthService authService;
 
@@ -508,59 +512,6 @@ class _MessageBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(message, style: TextStyle(color: color)),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.user, required this.onLogOut});
-
-  final AuthUser user;
-  final VoidCallback onLogOut;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('GymBros'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onLogOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.fitness_center,
-                size: 52,
-                color: Color(0xFFB6F36A),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'You’re in, ${user.username}!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: onLogOut,
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign out'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
