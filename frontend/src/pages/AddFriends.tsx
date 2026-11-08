@@ -39,7 +39,8 @@ export default function AddFriends({
   const [message, setMessage] = useState("")
   const friendIdSet = new Set(friendIds)
 
-  // Debounce username searches and ignore results from searches that have been replaced.
+  // We delay search requests slightly so typing a username does not spam the backend,
+  // and stale results are ignored once a newer search replaces them.
   useEffect(() => {
     let active = true
     const searchQuery = query.trim()
@@ -78,7 +79,8 @@ export default function AddFriends({
     }
   }, [currentUserId, query])
 
-  // Refresh the parent list after adding so the new friend is reflected immediately.
+  // Add the selected user through the API, then tell the parent page to reload so the
+  // friend list is updated immediately without a manual refresh.
   async function handleAdd(user: UserSearchResult) {
     setPendingFriendId(user.id)
     setError("")

@@ -3,7 +3,8 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router"
 import { login } from "../api/auth"
 
-// Styling for the Login component and its child elements.
+// Keep the login page styling in one place so the layout stays consistent while the
+// form logic remains focused on user authentication and validation.
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-y-auto px-3 py-4"
 const background =
@@ -24,6 +25,8 @@ export default function Login() {
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Validate the login form before calling the API so users get immediate feedback
+  // and the submit flow stays predictable.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
@@ -41,7 +44,8 @@ export default function Login() {
 
     try {
       const token = await login(identifier, password)
-      // Keep the token available for authenticated API requests during this session.
+      // Store the auth token in session storage so protected requests can reuse it
+      // without forcing the user to sign in again during the current browser session.
       sessionStorage.setItem("authToken", token)
       navigate("/home-page")
     } catch (submitError) {
@@ -51,6 +55,8 @@ export default function Login() {
     }
   }
 
+  // The form sits inside a single centered card to keep the sign-in experience simple
+  // and consistent across mobile and desktop layouts.
   return (
     <main className={page}>
       <img

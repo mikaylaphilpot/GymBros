@@ -10,7 +10,8 @@ import vertMenu from "../assets/vertMenu.png"
 import { deleteFriend, getCurrentUserId, getFriendsByStats, type Friend, type FriendsByStats } from "../api/friends"
 import AddFriends from "./AddFriends"
 
-// Styling for the FriendsPage component and its child elements.
+// The friends page keeps the page-level layout and card styling in one set of constants so the
+// section content remains easy to scan and consistent across the app.
 const page = "relative min-h-dvh overflow-x-hidden"
 const background = "pointer-events-none fixed inset-0 size-full object-cover"
 const panel =
@@ -39,6 +40,8 @@ type FriendCardProps = {
   onRemove: (friend: Friend) => void
 }
 
+// Each friend row is a reusable card that can show a stat summary and expose a small
+// menu for removing the relationship without leaving the page.
 function FriendCard({
   friend,
   statistic,
@@ -106,7 +109,8 @@ export default function FriendsPage() {
   const [isRemoving, setIsRemoving] = useState("")
   const [error, setError] = useState("")
 
-  // Resolve the signed-in user before requesting their friend list.
+  // Resolve the signed-in user before requesting their friend list so the page can
+  // display the correct relationship data for the active account.
   useEffect(() => {
     let active = true
 
@@ -142,6 +146,8 @@ export default function FriendsPage() {
     setFriends(await getFriendsByStats(currentUserId))
   }, [currentUserId])
 
+  // Combine featured and regular friends into one list so duplicate entries can be
+  // filtered out before display.
   const visibleFriends = useMemo(() => {
     const allFriends = friends
       ? [
@@ -179,6 +185,8 @@ export default function FriendsPage() {
     }
   }, [friends, query])
 
+  // Removing a friend updates the backend and then refreshes the grouped stats so the
+  // featured sections and regular list stay in sync.
   async function handleRemove(friend: Friend) {
     if (!currentUserId) return
     setError("")
@@ -195,6 +203,8 @@ export default function FriendsPage() {
     }
   }
 
+  // A helper keeps the "featured" list layout consistent for both the streak leader and
+  // the most frequent bugger.
   function renderFeaturedFriend(
     heading: string,
     subtitle: string,
