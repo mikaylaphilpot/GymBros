@@ -40,7 +40,7 @@ test("friends endpoints reject requests for another user's ID", async () => {
       `http://127.0.0.1:${address.port}/api/users/signed-in-user/friends/stats`,
       { headers: { Authorization: "Bearer invalid-token" } },
     );
-    assert.equal(invalidCredentialsResponse.status, 401, "invalid credentials should be unauthorized");
+    assert.equal(invalidCredentialsResponse.status, 401, "invalid credentials unauthorized");
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => error ? reject(error) : resolve());
