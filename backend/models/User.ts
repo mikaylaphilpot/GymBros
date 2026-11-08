@@ -6,6 +6,7 @@ export interface IFriends {
   lastBuggedAt: Date | null
 }
 
+// This interface describes fields stored by the Mongoose User model.
 export interface IUser {
   username: string
   email: string
@@ -26,7 +27,7 @@ const UserSchema = new mongoose.Schema<IUser>({
     required: true,
     unique: true,
     trim: true,
-    index: true
+    index: true   // Optimized for partial-match search requirement
   },
   email: {
     type: String,
@@ -35,12 +36,12 @@ const UserSchema = new mongoose.Schema<IUser>({
     trim: true
   },
   password: {
-    type: String,
+    type: String,   // Stored as a bcrypt hash by the backend
     required: true
   },
   isVerified: {
     type: Boolean,
-    default: false
+    default: false    // For email verification requirement
   },
   verificationToken: {
     type: String,
@@ -60,12 +61,13 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   streakCount: {
     type: Number,
-    default: 0
+    default: 0    // Weekly/daily streak count
   },
   lastWorkoutCompletedAt: {
     type: Date,
     default: null
   },
+   // Sub-document array to manage Bros & Bug tracking
   friends: [
     {
       friendId: {
@@ -74,7 +76,7 @@ const UserSchema = new mongoose.Schema<IUser>({
       },
       bugCount: {
         type: Number,
-        default: 0
+        default: 0    // Increments when you click "Bug"
       },
       lastBuggedAt: {
         type: Date,
@@ -84,6 +86,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   ]
 }, { timestamps: true })
 
+// Partial text/regex index for user search ("Find Your Bros")
 UserSchema.index({ username: "text" })
 
 export default mongoose.model<IUser>("User", UserSchema)
