@@ -23,7 +23,7 @@ export default function ForgotPswdPage() {
 
                     <div className="pswd-page-routing">
                         <RoutingButton label="Send" routingTo="" iconSrc="" normalButton={1} />
-                        <Link to="/home-page">Back</Link>
+                        <Link to="/">Back</Link>
                     </div>
 
                 </div>
