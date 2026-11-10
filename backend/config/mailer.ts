@@ -1,8 +1,5 @@
-import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
-import path from 'path';
-
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+import './env.js';
 
 const smtpHost = process.env.SMTP_HOST?.trim();
 const smtpPort = Number(process.env.SMTP_PORT);
