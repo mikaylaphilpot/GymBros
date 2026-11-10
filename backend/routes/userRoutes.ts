@@ -1,18 +1,39 @@
-import { Router, type Request } from "express";
-import authMiddleware from "../middleware/authMiddleware.js";
-import { searchUsers } from "../api/search.js";
-import { addFriend } from "../api/addFriend.js";
-import { deleteFriend } from "../api/deleteFriend.js";
-import { getFriendsByStats } from "../api/getFriends.js";
+import { Router } from "express";
+import { searchUsers } from "../api/search";
+import { addFriend } from "../api/addFriend";
+import { deleteFriend } from "../api/deleteFriend";
+import { getFriendsByStats } from "../api/getFriends";
+import authMiddleware from "../middleware/authMiddleware";
+import type { Request, RequestHandler, Response } from "express";
 
 const router = Router();
 
-router.use(authMiddleware);
+const requireCurrentUser: RequestHandler = (req, res, next) => {
+  if (typeof req.userId !== "string") {
+    return res.status(401).json({ message: "Invalid or missing authentication credentials." });
+  }
 
-function getAuthenticatedUserId(req: Request) {
-  return (req as Request & { userId?: string }).userId;
+  if (typeof req.params.currentUserId !== "string") {
+    return res.status(400).json({ message: "Invalid user ID." });
+  }
+
+  if (req.userId !== req.params.currentUserId) {
+    return res.status(403).json({ message: "You cannot access another user's friends." });
+  }
+
+  next();
+};
+
+function getAuthenticatedUserId(req: Request, res: Response): string | undefined {
+  if (typeof req.userId !== "string") {
+    res.status(401).json({ message: "Invalid or missing authentication credentials." });
+    return undefined;
+  }
+
+  return req.userId;
 }
 
+// AI-assisted: Initial Implementation suggested by Copilot
 router.get("/search", async (req, res) => {
   try {
     const searchContents =
@@ -27,13 +48,13 @@ router.get("/search", async (req, res) => {
   }
 });
 
-router.get("/:currentUserId/friends/stats", async (req, res) => {
-  try {
-    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
-      return res.status(403).json({ message: "You may only access your own friends." });
-    }
+// AI-assisted: Initial Implementation suggested by Copilot
+router.get("/:currentUserId/friends/stats", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
 
-    const stats = await getFriendsByStats(req.params.currentUserId);
+  try {
+    const stats = await getFriendsByStats(currentUserId);
 
     res.json(stats);
   } catch (error) {
@@ -46,13 +67,17 @@ router.get("/:currentUserId/friends/stats", async (req, res) => {
   }
 });
 
-router.post("/:currentUserId/friends/:friendId", async (req, res) => {
-  try {
-    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
-      return res.status(403).json({ message: "You may only manage your own friends." });
-    }
+// AI-assisted: Initial Implementation suggested by Copilot
+router.post("/:currentUserId/friends/:friendId", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+  const friendId = req.params.friendId;
+  if (typeof friendId !== "string") {
+    return res.status(400).json({ message: "Invalid friend ID." });
+  }
 
-    const result = await addFriend(req.params.currentUserId, req.params.friendId);
+  try {
+    const result = await addFriend(currentUserId, friendId);
 
     res.status(result.added ? 201 : 200).json(result);
   } catch (error) {
@@ -65,13 +90,17 @@ router.post("/:currentUserId/friends/:friendId", async (req, res) => {
   }
 });
 
-router.delete("/:currentUserId/friends/:friendId", async (req, res) => {
-  try {
-    if (req.params.currentUserId !== getAuthenticatedUserId(req)) {
-      return res.status(403).json({ message: "You may only manage your own friends." });
-    }
+// AI-assisted: Initial Implementation suggested by Copilot
+router.delete("/:currentUserId/friends/:friendId", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+  const friendId = req.params.friendId;
+  if (typeof friendId !== "string") {
+    return res.status(400).json({ message: "Invalid friend ID." });
+  }
 
-    const result = await deleteFriend(req.params.currentUserId, req.params.friendId);
+  try {
+    const result = await deleteFriend(currentUserId, friendId);
 
     res.status(result.deleted ? 200 : 404).json(result);
   } catch (error) {
