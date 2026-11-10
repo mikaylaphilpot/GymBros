@@ -1,16 +1,39 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
 import 'pages/login_page.dart';
+import 'notifications/notification_service.dart';
+import 'pages/notifications_page.dart';
 
-void main() {
-  runApp(GymBrosApp(authService: AuthService()));
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  const tokenStore = SecureTokenStore();
+  runApp(
+    GymBrosApp(
+      authService: AuthService(tokenStore: tokenStore),
+      notificationService: NotificationService(tokenStore: tokenStore),
+    ),
+  );
 }
 
 class GymBrosApp extends StatefulWidget {
-  const GymBrosApp({super.key, required this.authService});
+  const GymBrosApp({
+    super.key,
+    required this.authService,
+    this.notificationService,
+  });
 
   final AuthService authService;
+  final NotificationService? notificationService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -37,6 +60,7 @@ class _GymBrosAppState extends State<GymBrosApp> {
         _restoreError = null;
         _isRestoring = false;
       });
+      if (user != null) await _registerNotifications();
     } on AuthException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -51,12 +75,26 @@ class _GymBrosAppState extends State<GymBrosApp> {
       _user = user;
       _restoreError = null;
     });
+    _registerNotifications();
   }
 
   Future<void> _logOut() async {
+    try {
+      await widget.notificationService?.unregisterCurrentDevice();
+    } on NotificationException catch (error) {
+      debugPrint('Could not unregister notification token: $error');
+    }
     await widget.authService.logOut();
     if (!mounted) return;
     setState(() => _user = null);
+  }
+
+  Future<void> _registerNotifications() async {
+    try {
+      await widget.notificationService?.registerCurrentDevice();
+    } on NotificationException catch (error) {
+      debugPrint('Could not register notification token: $error');
+    }
   }
 
   void _toggleSignUp() {
@@ -121,7 +159,11 @@ class _GymBrosAppState extends State<GymBrosApp> {
                     onLoggedIn: _onLoggedIn,
                     onCreateAccount: _toggleSignUp,
                   )
-          : HomeScreen(user: _user!, onLogOut: _logOut),
+          : HomeScreen(
+              user: _user!,
+              onLogOut: _logOut,
+              notificationService: widget.notificationService,
+            ),
     );
   }
 }
@@ -513,10 +555,16 @@ class _MessageBanner extends StatelessWidget {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.user, required this.onLogOut});
+  const HomeScreen({
+    super.key,
+    required this.user,
+    required this.onLogOut,
+    this.notificationService,
+  });
 
   final AuthUser user;
   final VoidCallback onLogOut;
+  final NotificationService? notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -552,6 +600,18 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 24),
+              if (notificationService != null)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          NotificationsPage(service: notificationService!),
+                    ),
+                  ),
+                  icon: const Icon(Icons.notifications),
+                  label: const Text('Notifications'),
+                ),
+              if (notificationService != null) const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: onLogOut,
                 icon: const Icon(Icons.logout),

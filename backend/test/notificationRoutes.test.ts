@@ -6,18 +6,47 @@ import {
   createInMemoryPushSubscriptionStore,
   type PushSubscription,
 } from "../models/pushSubscription.js";
+import { createInMemoryNotificationStore } from "../models/notification.js";
+import type { NotificationStore } from "../models/notification.js";
+import type { DeviceTokenStore } from "../models/deviceToken.js";
+import type { NativePushSender } from "../services/firebaseNotifications.js";
 import { createNotificationRouter } from "../routes/notificationRoutes.js";
 
 process.env.ALLOW_DEV_USER_HEADER = "true";
 
 function createTestServer(
   sendNotification: (subscription: PushSubscription, payload: string) => Promise<void> = async () => undefined,
+  nativePushSender?: NativePushSender,
 ) {
   const app = express();
   const store = createInMemoryPushSubscriptionStore();
+  const notificationStore = createInMemoryNotificationStore();
+  const deviceTokens: Array<{ userId: string; token: string; platform: string }> = [];
+  const deviceTokenStore: DeviceTokenStore = {
+    async save(userId, token, platform) {
+      if (typeof token !== "string" || (platform !== "android" && platform !== "ios")) {
+        throw new TypeError("invalid device token");
+      }
+      deviceTokens.push({ userId, token, platform });
+    },
+    async delete(userId, token) {
+      const index = deviceTokens.findIndex(
+        (entry) => entry.userId === userId && entry.token === token,
+      );
+      if (index >= 0) deviceTokens.splice(index, 1);
+    },
+    async list(userId) {
+      return deviceTokens
+        .filter((entry) => entry.userId === userId)
+        .map((entry) => entry.token);
+    },
+  };
   app.use(express.json());
   app.use("/api/notifications", createNotificationRouter({
     store,
+    notificationStore,
+    deviceTokenStore,
+    nativePushSender,
     pushClient: { sendNotification },
     allowDevTest: true,
   }));
@@ -26,7 +55,7 @@ function createTestServer(
     res.status(500).json({ message });
   });
   const server = http.createServer(app);
-  return { server, store };
+  return { server, store, notificationStore, deviceTokens };
 }
 
 async function request(
@@ -51,7 +80,11 @@ async function request(
       ...options,
       headers: { "content-type": "application/json", ...(options.headers ?? {}) },
     });
-    return { status: response.status, body: await response.json() as Record<string, unknown> };
+    const text = await response.text();
+    return {
+      status: response.status,
+      body: text ? (JSON.parse(text) as Record<string, unknown>) : {},
+    };
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
@@ -132,6 +165,95 @@ test("sends a test notification to the authenticated user", async () => {
   let sentPayload: Record<string, unknown> | undefined;
   const server = createTestServer(async (_subscription, payload) => {
     sentPayload = JSON.parse(payload) as Record<string, unknown>;
+  });
+
+  test("creates, lists, and marks an in-app notification as read", async () => {
+    const server = createTestServer();
+    const created = await request(server.server, "/api/notifications", {
+      method: "POST",
+      headers: { "x-user-id": "sender" },
+      body: JSON.stringify({
+        targetUserId: "recipient",
+        title: "Friend request",
+        message: "You have a new friend request.",
+      }),
+    });
+    assert.equal(created.status, 201);
+    const notification = created.body.notification as Record<string, unknown>;
+    assert.equal(notification.read, false);
+
+    const listed = await request(server.server, "/api/notifications/inbox", {
+      method: "GET",
+      headers: { "x-user-id": "recipient" },
+    });
+    assert.equal(listed.status, 200);
+    const notifications = listed.body.notifications as Array<Record<string, unknown>>;
+    assert.equal(notifications.length, 1);
+
+    const marked = await request(
+      server.server,
+      `/api/notifications/inbox/${notification.id as string}/read`,
+      { method: "PATCH", headers: { "x-user-id": "recipient" } },
+    );
+    assert.equal(marked.status, 204);
+    const unread = await request(
+      server.server,
+      "/api/notifications/inbox?unreadOnly=true",
+      { method: "GET", headers: { "x-user-id": "recipient" } },
+    );
+    assert.deepEqual(unread.body.notifications, []);
+  });
+
+  test("validates and stores an authenticated device token", async () => {
+    const server = createTestServer();
+    const saved = await request(server.server, "/api/notifications/device-token", {
+      method: "POST",
+      headers: { "x-user-id": "user-5" },
+      body: JSON.stringify({ token: "fcm-token", platform: "android" }),
+    });
+
+    test("sends native notifications and removes invalid FCM tokens", async () => {
+      let sentTokens: string[] = [];
+      const server = createTestServer(
+        undefined,
+        {
+          async send(tokens) {
+            sentTokens = tokens;
+            return ["expired-token"];
+          },
+        },
+      );
+      await request(server.server, "/api/notifications/device-token", {
+        method: "POST",
+        headers: { "x-user-id": "recipient" },
+        body: JSON.stringify({ token: "expired-token", platform: "android" }),
+      });
+      await request(server.server, "/api/notifications/device-token", {
+        method: "POST",
+        headers: { "x-user-id": "recipient" },
+        body: JSON.stringify({ token: "valid-token", platform: "android" }),
+      });
+
+      const result = await request(server.server, "/api/notifications", {
+        method: "POST",
+        headers: { "x-user-id": "sender" },
+        body: JSON.stringify({
+          targetUserId: "recipient",
+          title: "Friend request",
+          message: "You have a new friend request.",
+        }),
+      });
+
+      assert.equal(result.status, 201);
+      assert.deepEqual(sentTokens, ["expired-token", "valid-token"]);
+      assert.deepEqual(server.deviceTokens, [
+        { userId: "recipient", token: "valid-token", platform: "android" },
+      ]);
+    });
+    assert.equal(saved.status, 204);
+    assert.deepEqual(server.deviceTokens, [
+      { userId: "user-5", token: "fcm-token", platform: "android" },
+    ]);
   });
   await server.store.save("user-4", subscription);
 

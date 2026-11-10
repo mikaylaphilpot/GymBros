@@ -6,6 +6,9 @@ import { connectToMongoDB } from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
 import { createMongoPushSubscriptionStore } from "./models/pushSubscription.js"
 import { createNotificationRouter } from "./routes/notificationRoutes.js"
+import { createNotificationStore } from "./models/notification.js"
+import { createDeviceTokenStore } from "./models/deviceToken.js"
+import { createFirebasePushSender } from "./services/firebaseNotifications.js"
 import scheduleRoutes from "./routes/scheduleRoutes.js"
 import userRoutes from "./routes/userRoutes.js"
 
@@ -57,6 +60,9 @@ async function startServer(): Promise<void> {
       "/api/notifications",
       createNotificationRouter({
         store: createMongoPushSubscriptionStore(database),
+        notificationStore: createNotificationStore(database.collection("notifications")),
+        deviceTokenStore: createDeviceTokenStore(database.collection("deviceTokens")),
+        nativePushSender: createFirebasePushSender(),
         allowDevTest: process.env.NODE_ENV !== "production",
       }),
     )

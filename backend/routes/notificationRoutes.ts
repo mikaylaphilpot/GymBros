@@ -10,6 +10,9 @@ import type {
   PushSubscriptionRecord,
   PushSubscriptionStore,
 } from "../models/pushSubscription.js";
+import type { DeviceTokenStore } from "../models/deviceToken.js";
+import type { NotificationStore } from "../models/notification.js";
+import type { NativePushSender } from "../services/firebaseNotifications.js";
 
 interface NotificationBody {
   targetUserId?: unknown;
@@ -31,6 +34,9 @@ interface NotificationRouterOptions {
   pushClient?: PushClient;
   allowDevTest?: boolean;
   authenticationMiddleware?: RequestHandler;
+  notificationStore?: NotificationStore;
+  deviceTokenStore?: DeviceTokenStore;
+  nativePushSender?: NativePushSender;
 }
 
 interface PushError {
@@ -92,6 +98,9 @@ export function createNotificationRouter({
   pushClient = webpush,
   allowDevTest = false,
   authenticationMiddleware = devOrJwtAuthentication(),
+  notificationStore,
+  deviceTokenStore,
+  nativePushSender,
 }: NotificationRouterOptions): express.Router {
   if (!store) {
     throw new TypeError("A push subscription store is required");
@@ -99,6 +108,136 @@ export function createNotificationRouter({
 
   const router = express.Router();
   router.use(authenticationMiddleware);
+
+  router.get("/inbox", async (req, res, next) => {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+    if (!notificationStore) {
+      res.status(503).json({ message: "In-app notifications are not configured" });
+      return;
+    }
+    try {
+      const unreadOnly = req.query.unreadOnly === "true";
+      const requestedLimit = Number(req.query.limit ?? 50);
+      const limit = Number.isInteger(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), 100)
+        : 50;
+      const notifications = await notificationStore.list(req.userId, unreadOnly, limit);
+      res.json({ notifications });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.patch("/inbox/:notificationId/read", async (req, res, next) => {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+    if (!notificationStore) {
+      res.status(503).json({ message: "In-app notifications are not configured" });
+      return;
+    }
+    try {
+      const updated = await notificationStore.markRead(
+        req.userId,
+        req.params.notificationId,
+      );
+      res.status(updated ? 204 : 404).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/device-token", async (req, res, next) => {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+    if (!deviceTokenStore) {
+      res.status(503).json({ message: "Device notifications are not configured" });
+      return;
+    }
+    try {
+      await deviceTokenStore.save(req.userId, req.body?.token, req.body?.platform);
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.delete("/device-token", async (req, res, next) => {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+    if (!deviceTokenStore) {
+      res.status(503).json({ message: "Device notifications are not configured" });
+      return;
+    }
+    try {
+      await deviceTokenStore.delete(req.userId, req.body?.token);
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.post("/", async (req, res, next) => {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+    if (!notificationStore) {
+      res.status(503).json({ message: "In-app notifications are not configured" });
+      return;
+    }
+    const { targetUserId, title, message, url } = req.body ?? {};
+    if (typeof targetUserId !== "string" || !targetUserId.trim()) {
+      res.status(400).json({ message: "targetUserId is required" });
+      return;
+    }
+    if (typeof title !== "string" || !title.trim()) {
+      res.status(400).json({ message: "title is required" });
+      return;
+    }
+    if (typeof message !== "string" || !message.trim()) {
+      res.status(400).json({ message: "message is required" });
+      return;
+    }
+    try {
+      const notification = await notificationStore.create({
+        userId: targetUserId.trim(),
+        title: title.trim(),
+        message: message.trim(),
+        url: typeof url === "string" && url.trim() ? url.trim() : undefined,
+      });
+      if (nativePushSender && deviceTokenStore) {
+        const tokens = await deviceTokenStore.list(targetUserId.trim());
+        const invalidTokens = await nativePushSender.send(tokens, {
+          title: title.trim(),
+          message: message.trim(),
+          url: typeof url === "string" && url.trim() ? url.trim() : undefined,
+        });
+        await Promise.all(
+          invalidTokens.map((token) => deviceTokenStore.delete(targetUserId.trim(), token)),
+        );
+      }
+      res.status(201).json({ notification });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   router.post(
     "/subscribe",

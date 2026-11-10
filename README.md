@@ -124,6 +124,24 @@ bearer JWT; local testing may use the `x-user-id` identity header only when
 The existing `POST /api/notifications/send` endpoint remains available for
 testing messages between different subscribed users.
 
+### Mobile notification API
+
+Authenticated mobile clients use the same `/api/notifications` base:
+
+- `GET /inbox?unreadOnly=true&limit=50` lists the signed-in user's notifications.
+- `PATCH /inbox/:notificationId/read` marks one owned notification as read.
+- `POST /` creates an in-app notification for `targetUserId` with `title`,
+  `message`, and optional `url`.
+- `POST /device-token` registers a future native push token with
+  `{ "token": "...", "platform": "android" }`.
+- `DELETE /device-token` removes a registered token.
+
+All mobile endpoints require the user's JWT bearer token. FCM delivery is enabled by setting `FCM_ENABLED=true` and
+`GOOGLE_APPLICATION_CREDENTIALS` to a backend-only Firebase service-account
+JSON path. The in-app feed continues to work when FCM is disabled. See
+[`mobile/README.md`](./mobile/README.md#configure-firebase-cloud-messaging) for
+the Android and server setup.
+
 For a PowerShell API test, use the actual recipient ID and run both commands:
 
 ```powershell

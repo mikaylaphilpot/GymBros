@@ -8,3 +8,5 @@ AGENTS.MD
 
 dist/
 .DS_Store
+mobile/android/app/google-services.json
+secure/
