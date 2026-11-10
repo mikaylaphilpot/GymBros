@@ -1,16 +1,10 @@
 import mongoose from "mongoose";
-import User from "../models/User.js";
+import User, { type IFriends } from "../models/User.js";
 
 export interface FriendDetails {
   friendId: string;
   username: string;
   streakCount: number;
-  bugCount: number;
-  lastBuggedAt: Date | null;
-}
-
-interface UserFriend {
-  friendId: mongoose.Types.ObjectId | null;
   bugCount: number;
   lastBuggedAt: Date | null;
 }
@@ -32,7 +26,7 @@ export async function getFriends(
   }
 
   return user.friends
-    .map((friend: UserFriend) => {
+    .map((friend: IFriends) => {
       const populatedFriend = friend.friendId as unknown as {
         _id: mongoose.Types.ObjectId;
         username: string;

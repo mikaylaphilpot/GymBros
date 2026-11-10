@@ -98,8 +98,6 @@ export default function SignUp() {
           type="text"
           autoComplete="username"
           placeholder="Username"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
           className={input}
         />
 

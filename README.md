@@ -118,8 +118,9 @@ VS Code embedded browser. Enter the recipient's MongoDB user `_id`, click
 reports that notifications are enabled, click **Send test notification**.
 
 The page uses `POST /api/notifications/test`, which sends a default test
-message to the authenticated development user. The endpoint requires the
-temporary `x-user-id` identity header and therefore is for local testing only.
+message to the authenticated development user. Production requests use a
+bearer JWT; local testing may use the `x-user-id` identity header only when
+`ALLOW_DEV_USER_HEADER=true`, so this endpoint remains for local testing only.
 The existing `POST /api/notifications/send` endpoint remains available for
 testing messages between different subscribed users.
 

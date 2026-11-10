@@ -34,12 +34,15 @@ function getAuthenticatedUserId(req: Request, res: Response): string | undefined
 }
 
 // AI-assisted: Initial Implementation suggested by Copilot
-router.get("/search", async (req, res) => {
+router.get("/search", authMiddleware, async (req, res) => {
   try {
     const searchContents =
       typeof req.query.q === "string" ? req.query.q : "";
 
-    const users = await searchUsers(searchContents, getAuthenticatedUserId(req));
+    const currentUserId = getAuthenticatedUserId(req, res);
+    if (!currentUserId) return;
+
+    const users = await searchUsers(searchContents, currentUserId);
 
     res.json(users);
   } catch (error) {

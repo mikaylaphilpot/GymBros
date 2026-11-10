@@ -8,7 +8,7 @@
     "dev": "tsx watch server.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && tsx --test routes/userRoutes.test.ts"
+    "test": "npm run typecheck && tsx --test routes/userRoutes.test.ts test/notificationRoutes.test.ts"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.7.0",
     "mongoose": "^9.11.3",
-    "nodemailer": "^10.3.1"
+    "nodemailer": "^10.3.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -39,6 +40,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.6.5",
     "@types/nodemailer": "^6.4.17",
+    "@types/web-push": "^3.6.4",
     "nodemon": "^3.1.14",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

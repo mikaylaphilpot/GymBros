@@ -42,7 +42,7 @@ void main() {
     await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Become a Bro!'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Confirm password'), findsOneWidget);
   });
@@ -70,7 +70,7 @@ void main() {
     await tester.enterText(fields.at(1), 'gymbro@example.com');
     await tester.enterText(fields.at(2), 'Password1!');
     await tester.enterText(fields.at(3), 'Password1!');
-    await tester.tap(find.text('Create account'));
+    await tester.tap(find.text('Sign Up'));
     await tester.pumpAndSettle();
 
     expect(requestPath, '/api/auth/signup');
