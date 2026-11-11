@@ -2,7 +2,7 @@ import { Router } from "express";
 import { searchUsers } from "../api/search";
 import { addFriend } from "../api/addFriend";
 import { deleteFriend } from "../api/deleteFriend";
-import { getFriendsByStats } from "../api/getFriends";
+import { getFriendsByStats, getFriendsWithTodayWorkouts } from "../api/getFriends";
 import authMiddleware from "../middleware/authMiddleware";
 import type { Request, RequestHandler, Response } from "express";
 
@@ -67,6 +67,19 @@ router.get("/:currentUserId/friends/stats", authMiddleware, requireCurrentUser, 
     const status = message.includes("not found") ? 404 : 400;
 
     res.status(status).json({ message });
+  }
+});
+
+router.get("/:currentUserId/friends/workouts/today", authMiddleware, requireCurrentUser, async (req, res) => {
+  const currentUserId = getAuthenticatedUserId(req, res);
+  if (!currentUserId) return;
+
+  try {
+    res.json(await getFriendsWithTodayWorkouts(currentUserId));
+  } catch (error) {
+    console.error("Getting friend workouts failed:", error);
+    const message = error instanceof Error ? error.message : "Unable to get friend workouts.";
+    res.status(message.includes("not found") ? 404 : 400).json({ message });
   }
 });
 

@@ -3,15 +3,17 @@ import express, {
   type Response,
   type NextFunction,
 } from "express";
+import mongoose from "mongoose";
 import webpush from "web-push";
 import authMiddleware from "../middleware/authMiddleware.js";
+import User from "../models/User.js";
 import type {
   PushSubscription,
   PushSubscriptionRecord,
   PushSubscriptionStore,
 } from "../models/pushSubscription.js";
 import type { DeviceTokenStore } from "../models/deviceToken.js";
-import type { NotificationStore } from "../models/notification.js";
+import type { NotificationRecord, NotificationStore } from "../models/notification.js";
 import type { NativePushSender } from "../services/firebaseNotifications.js";
 
 interface NotificationBody {
@@ -89,6 +91,54 @@ async function sendToRecord(
   payload: string,
 ): Promise<void> {
   await pushClient.sendNotification(record.subscription, payload);
+}
+
+// AI-assisted: keeps friend actions consistent across browser, in-app, and native delivery.
+async function sendToAllChannels(
+  targetUserId: string,
+  notification: { title: string; message: string; url?: string },
+  dependencies: {
+    notificationStore: NotificationStore;
+    store: PushSubscriptionStore;
+    deviceTokenStore?: DeviceTokenStore;
+    nativePushSender?: NativePushSender;
+  },
+): Promise<NotificationRecord> {
+  const created = await dependencies.notificationStore.create({
+    userId: targetUserId,
+    ...notification,
+  });
+
+  const browserRecord = await dependencies.store.findByUserId(targetUserId);
+  if (browserRecord) {
+    try {
+      await sendToRecord(
+        browserRecord,
+        webpush,
+        createPayload({
+          messageText: notification.message,
+          title: notification.title,
+          url: notification.url,
+        }),
+      );
+    } catch (error) {
+      if (isPushError(error) && (error.statusCode === 404 || error.statusCode === 410)) {
+        await dependencies.store.deleteByUserId(targetUserId);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (dependencies.nativePushSender && dependencies.deviceTokenStore) {
+    const tokens = await dependencies.deviceTokenStore.list(targetUserId);
+    const invalidTokens = await dependencies.nativePushSender.send(tokens, notification);
+    await Promise.all(
+      invalidTokens.map((token) => dependencies.deviceTokenStore?.delete(targetUserId, token)),
+    );
+  }
+
+  return created;
 }
 
 // AI-assisted: route factory keeps delivery dependencies injectable for tests
@@ -221,6 +271,78 @@ export function createNotificationRouter({
         title: title.trim(),
         message: message.trim(),
         url: typeof url === "string" && url.trim() ? url.trim() : undefined,
+      });
+
+      async function sendFriendNotification(
+        req: express.Request<{ friendId: string }>,
+        res: express.Response,
+        next: express.NextFunction,
+        kind: "bug" | "congratulate",
+      ): Promise<void> {
+        if (!req.userId) {
+          res.status(401).json({ message: "Authentication is required" });
+          return;
+        }
+        if (!notificationStore) {
+          res.status(503).json({ message: "In-app notifications are not configured" });
+          return;
+        }
+        if (!mongoose.isValidObjectId(req.params.friendId) || req.params.friendId === req.userId) {
+          res.status(400).json({ message: "Invalid friend ID." });
+          return;
+        }
+
+        try {
+          const friend = await User.findById(req.params.friendId).select("_id username");
+          const currentUser = await User.exists({
+            _id: req.userId,
+            "friends.friendId": req.params.friendId,
+          });
+
+          if (!friend || !currentUser) {
+            res.status(404).json({ message: "Friend relationship not found." });
+            return;
+          }
+
+          if (kind === "bug") {
+            await User.updateOne(
+              { _id: req.userId, "friends.friendId": req.params.friendId },
+              {
+                $inc: { "friends.$.bugCount": 1 },
+                $set: { "friends.$.lastBuggedAt": new Date() },
+              },
+            );
+          }
+
+          const notification = await sendToAllChannels(
+            req.params.friendId,
+            {
+              title: kind === "bug" ? "Your bro is checking in!" : "Congratulations, bro!",
+              message: kind === "bug"
+                ? `${req.userId} sent you a workout reminder.`
+                : `${req.userId} congratulated you on your workout!`,
+              url: "/home-page",
+            },
+            {
+              notificationStore,
+              store,
+              deviceTokenStore,
+              nativePushSender,
+            },
+          );
+
+          res.status(201).json({ notification });
+        } catch (error) {
+          next(error);
+        }
+      }
+
+      router.post("/friends/:friendId/bug", (req, res, next) => {
+        void sendFriendNotification(req, res, next, "bug");
+      });
+
+      router.post("/friends/:friendId/congratulate", (req, res, next) => {
+        void sendFriendNotification(req, res, next, "congratulate");
       });
       if (nativePushSender && deviceTokenStore) {
         const tokens = await deviceTokenStore.list(targetUserId.trim());
