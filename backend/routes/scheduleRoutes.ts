@@ -246,7 +246,7 @@ router.delete('/:id', async (
         res.status(200).json({ message: 'Schedule entry deleted successfully' });
 
     } catch (error: unknown) {
-        
+
         console.error('Delete schedule error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }

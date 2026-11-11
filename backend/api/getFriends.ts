@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "../models/User.js";
+import User, { type IFriends } from "../models/User.js";
 
 export interface FriendDetails {
   friendId: string;
@@ -26,7 +26,7 @@ export async function getFriends(
   }
 
   return user.friends
-    .map((friend) => {
+    .map((friend: IFriends) => {
       const populatedFriend = friend.friendId as unknown as {
         _id: mongoose.Types.ObjectId;
         username: string;
@@ -46,7 +46,10 @@ export async function getFriends(
         lastBuggedAt: friend.lastBuggedAt,
       };
     })
-    .filter((friend): friend is FriendDetails => friend !== null);
+    .filter(
+      (friend: FriendDetails | null): friend is FriendDetails =>
+        friend !== null,
+    );
 }
 
 // AI-assisted: Initial Implementation suggested by Copilot
