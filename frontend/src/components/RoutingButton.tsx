@@ -5,18 +5,20 @@ type ButtonProps = {
     label: string;
     routingTo: string; 
     iconSrc: string;
+    height?: number;
+    width?: number;
     normalButton?: number;
     onClick?: () => void;
 };
 
 
-export default function RoutingButton({label, routingTo, iconSrc, normalButton, onClick}: ButtonProps) {
+export default function RoutingButton({label, routingTo, iconSrc, height = 60, width = 60, normalButton, onClick}: ButtonProps) {
     if (onClick) {
         return (
             <button type="button" className={normalButton ? "normal-button" : "buttons"} onClick={onClick} >
                 {normalButton ? label : (
                     <>
-                        <Icon src={iconSrc} height={60} width={60} alt="button-icon"/>
+                        <Icon src={iconSrc} height={height} width={width} alt="button-icon"/>
                         {label}
                     </>
                 )}
@@ -34,7 +36,7 @@ export default function RoutingButton({label, routingTo, iconSrc, normalButton, 
     else {
         return (
             <Link to={routingTo} className="buttons">
-                <Icon src={iconSrc} height={50} width={50} alt="button-icon"/>
+                <Icon src={iconSrc} height={height} width={width} alt="button-icon"/>
                 {label}
             </Link>
         );

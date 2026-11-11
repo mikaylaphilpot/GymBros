@@ -19,8 +19,8 @@ export default function HomePage() {
                     <div className="header">
                         <PageTitle label="Hey, Bro!" />
                         <div className="no-gap-group-horizontal">
-                            <RoutingButton label="Bros" routingTo="/friends" iconSrc={brosIcon} />
-                            <RoutingButton label="Profile" routingTo="/profile-page" iconSrc={profileIcon} />   
+                            <RoutingButton label="Bros" routingTo="/friends" iconSrc={brosIcon} height={50} width={50} />
+                            <RoutingButton label="Profile" routingTo="/profile-page" iconSrc={profileIcon} height={50} width={50} />   
                         </div>
                     </div>
 

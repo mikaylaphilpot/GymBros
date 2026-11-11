@@ -39,7 +39,7 @@ export default function EditUserInfoPage() {
         <main>
             <div className="white-container">
                 <div className="left-align-button">
-                    <RoutingButton label="Cancel" routingTo="/profile-page" iconSrc={cancelIcon} />
+                    <RoutingButton label="Cancel" routingTo="/profile-page" iconSrc={cancelIcon} height={30} width={30} />
                 </div>
 
                 <div className="no-gap-group-vertical">

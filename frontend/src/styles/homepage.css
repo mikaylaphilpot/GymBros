@@ -244,12 +244,14 @@ p {
 .schedule-checkboxes {
     display: flex;
     flex-direction: row;
-    gap: 40px;
+    gap: 10px;
     margin: 30px auto;
+    
 
-
-    font-size: 24px;
+    font-size: 16px;
 }
+
+ 
 
 .schedule-item-header, .schedule-item-box {
     display: flex;
@@ -264,6 +266,7 @@ p {
 .schedule-item-box {
     gap: 20px;
     font-size: 20px;
+    align-items: center;
 }
 
 .schedule-item-box input {
@@ -271,12 +274,20 @@ p {
     font-size: 20px;
     border-style: none;
     background-color: #D9D9D9;
-    width: 30cqw;
+    width: 29cqw;
 }
 
 .schedule-item {
     display: flex;
     flex-direction: column;
+}
+
+.delete-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    padding-top: 20px;
 }
 
 .forget-password-box {
