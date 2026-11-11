@@ -40,6 +40,14 @@ const daysOfWeek: readonly DayOfWeek[] = [
 ] as const;
 const timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM)$/i;
 
+function getTodayDateKey(): string {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function getTodayName(): DayOfWeek {
+    return daysOfWeek[(new Date().getUTCDay() + 6) % 7];
+}
+
 // This type guard confirms the day is one of the model's allowed values.
 function isDayOfWeek(day: unknown): day is DayOfWeek {
     return typeof day === 'string' && daysOfWeek.some((validDay) => validDay === day);
@@ -66,6 +74,37 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 
+});
+
+// GET /api/schedules/today
+// Return the authenticated user's workouts for the current day.
+router.get('/today', async (req, res) => {
+    if (!req.userId) {
+        res.status(401).json({ message: 'Token Verification Failed' });
+        return;
+    }
+
+    try {
+        const today = getTodayDateKey();
+        const entries = await Schedule.find({
+            userId: req.userId,
+            dayOfWeek: getTodayName()
+        });
+
+        const normalizedEntries = entries.map((entry) => {
+            const isCompletedToday = entry.completedDate === today;
+            if (entry.isCompletedToday !== isCompletedToday) {
+                entry.isCompletedToday = isCompletedToday;
+                void entry.save();
+            }
+            return entry;
+        });
+
+        res.status(200).json(normalizedEntries);
+    } catch (error: unknown) {
+        console.error('Get today schedule error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 // POST /api/schedules
@@ -105,7 +144,8 @@ router.post('/', async (
             dayOfWeek,
             startTime: startTime.trim(),
             endTime: endTime.trim(),
-            activity: activity.trim()
+            activity: activity.trim(),
+            completedDate: null
         });
 
         res.status(201).json(entry);
@@ -115,6 +155,49 @@ router.post('/', async (
         console.error('Create schedule error:', error);
         res.status(500).json({ message: 'Internal server error' });
 
+    }
+});
+
+// PATCH /api/schedules/:id/completion
+// Mark one of today's workouts complete or incomplete.
+router.patch('/:id/completion', async (
+    req: Request<{ id: string }, unknown, { isCompletedToday?: unknown }>,
+    res: Response
+) => {
+    if (!req.userId) {
+        res.status(401).json({ message: 'Token Verification Failed' });
+        return;
+    }
+
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(400).json({ message: 'Invalid schedule ID' });
+        return;
+    }
+
+    if (typeof req.body.isCompletedToday !== 'boolean') {
+        res.status(400).json({ message: 'isCompletedToday must be a boolean' });
+        return;
+    }
+
+    try {
+        const entry = await Schedule.findOne({
+            _id: req.params.id,
+            userId: req.userId,
+            dayOfWeek: getTodayName()
+        });
+
+        if (!entry) {
+            res.status(404).json({ message: 'Today schedule entry not found' });
+            return;
+        }
+
+        entry.isCompletedToday = req.body.isCompletedToday;
+        entry.completedDate = req.body.isCompletedToday ? getTodayDateKey() : null;
+        await entry.save();
+        res.status(200).json(entry);
+    } catch (error: unknown) {
+        console.error('Update schedule completion error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

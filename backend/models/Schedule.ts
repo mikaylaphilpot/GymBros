@@ -16,6 +16,7 @@ export interface ISchedule {
   endTime: string
   activity: string
   isCompletedToday: boolean
+  completedDate: string | null
 }
 
 const ScheduleSchema = new mongoose.Schema<ISchedule>({
@@ -45,6 +46,10 @@ const ScheduleSchema = new mongoose.Schema<ISchedule>({
   isCompletedToday: {
     type: Boolean,
     default: false
+  },
+  completedDate: {
+    type: String,
+    default: null
   }
 }, { timestamps: true })
 

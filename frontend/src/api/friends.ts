@@ -21,6 +21,16 @@ export interface FriendsByStats {
   mostBuggedFriend: Friend | null
 }
 
+export interface FriendWorkout extends Friend {
+  workouts: Array<{
+    scheduleId: string
+    activity: string
+    startTime: string
+    endTime: string
+    isCompletedToday: boolean
+  }>
+}
+
 export interface FriendActionResult {
   message: string
   added?: boolean
@@ -98,6 +108,37 @@ function parseFriend(value: unknown): Friend | null {
   }
 
   return value
+}
+
+function isFriendWorkout(value: unknown): value is FriendWorkout {
+  return isFriend(value) && Array.isArray((value as FriendWorkout).workouts) &&
+    (value as FriendWorkout).workouts.every((workout) =>
+      typeof workout.scheduleId === "string" &&
+      typeof workout.activity === "string" &&
+      typeof workout.startTime === "string" &&
+      typeof workout.endTime === "string" &&
+      typeof workout.isCompletedToday === "boolean")
+}
+
+export async function getFriendsTodayWorkouts(currentUserId: string): Promise<FriendWorkout[]> {
+  const payload = await requestJson(
+    `${usersApiUrl}/${encodeURIComponent(currentUserId)}/friends/workouts/today`,
+    { headers: getAuthHeaders() },
+  )
+  if (!Array.isArray(payload) || !payload.every(isFriendWorkout)) {
+    throw new Error("The server returned invalid friend workout data.")
+  }
+  return payload
+}
+
+export async function sendFriendNotification(
+  friendId: string,
+  action: "bug" | "congratulate",
+): Promise<void> {
+  await requestJson(`${apiBaseUrl}/api/notifications/friends/${encodeURIComponent(friendId)}/${action}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  })
 }
 
 export async function getCurrentUserId(): Promise<string> {
