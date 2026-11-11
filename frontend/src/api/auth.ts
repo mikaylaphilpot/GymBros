@@ -101,3 +101,75 @@ export async function resetPassword(token: string, password: string): Promise<st
 
     return data.message;
 }
+
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+export async function getCurrentUser(): Promise<UserProfile> {
+  const token = sessionStorage.getItem("authToken");
+
+  if (!token) {
+    throw new Error("You must be logged in to view your profile.");
+  }
+
+  const response = await fetch(`${authApiUrl}/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to load profile.");
+  }
+
+  return data as UserProfile;
+}
+
+export async function updateCurrentUser(
+  name: string,
+  username: string,
+  currentPassword: string,
+  newPassword?: string,
+): Promise<string> {
+  const token = sessionStorage.getItem("authToken");
+
+  if (!token) {
+    throw new Error("You must be logged in to update your profile.");
+  }
+
+  const body: Record<string, string> = {
+    name,
+    username,
+    currentPassword,
+  };
+
+  if (newPassword) {
+    body.password = newPassword;
+  }
+
+  const response = await fetch(`${authApiUrl}/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to update profile.");
+  }
+
+  return data.message ?? "Profile updated successfully.";
+}
+

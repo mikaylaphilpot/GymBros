@@ -4,6 +4,8 @@ body {
     background-position: center;
     background-size: cover;
     background-attachment: fixed;
+
+    font-family: 'Inter:Regular';
 }
 
 .white-container {
@@ -238,6 +240,7 @@ p {
     padding: 10px;
     background-color: #D9D9D9;
     border-style: none;
+    width: 94cqw;
     
 }
 
