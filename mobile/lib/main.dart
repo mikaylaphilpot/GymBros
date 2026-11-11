@@ -1,15 +1,39 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
+import 'pages/login_page.dart';
+import 'notifications/notification_service.dart';
+import 'pages/notifications_page.dart';
 
-void main() {
-  runApp(GymBrosApp(authService: AuthService()));
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  const tokenStore = SecureTokenStore();
+  runApp(
+    GymBrosApp(
+      authService: AuthService(tokenStore: tokenStore),
+      notificationService: NotificationService(tokenStore: tokenStore),
+    ),
+  );
 }
 
 class GymBrosApp extends StatefulWidget {
-  const GymBrosApp({super.key, required this.authService});
+  const GymBrosApp({
+    super.key,
+    required this.authService,
+    this.notificationService,
+  });
 
   final AuthService authService;
+  final NotificationService? notificationService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -19,6 +43,7 @@ class _GymBrosAppState extends State<GymBrosApp> {
   AuthUser? _user;
   String? _restoreError;
   bool _isRestoring = true;
+  bool _showSignUp = false;
 
   @override
   void initState() {
@@ -35,6 +60,7 @@ class _GymBrosAppState extends State<GymBrosApp> {
         _restoreError = null;
         _isRestoring = false;
       });
+      if (user != null) await _registerNotifications();
     } on AuthException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -49,12 +75,32 @@ class _GymBrosAppState extends State<GymBrosApp> {
       _user = user;
       _restoreError = null;
     });
+    _registerNotifications();
   }
 
   Future<void> _logOut() async {
+    try {
+      await widget.notificationService?.unregisterCurrentDevice();
+    } on NotificationException catch (error) {
+      debugPrint('Could not unregister notification token: $error');
+    }
     await widget.authService.logOut();
     if (!mounted) return;
     setState(() => _user = null);
+  }
+
+  Future<void> _registerNotifications() async {
+    try {
+      await widget.notificationService?.registerCurrentDevice();
+    } on NotificationException catch (error) {
+      debugPrint('Could not register notification token: $error');
+    }
+  }
+
+  void _toggleSignUp() {
+    setState(() {
+      _showSignUp = !_showSignUp;
+    });
   }
 
   @override
@@ -98,13 +144,26 @@ class _GymBrosAppState extends State<GymBrosApp> {
       home: _isRestoring
           ? const _LoadingScreen()
           : _user == null
-          ? AuthScreen(
-              key: const ValueKey('auth'),
-              authService: widget.authService,
-              initialMessage: _restoreError,
-              onLoggedIn: _onLoggedIn,
-            )
-          : HomeScreen(user: _user!, onLogOut: _logOut),
+          ? _showSignUp
+                ? AuthScreen(
+                    key: const ValueKey('signup'),
+                    authService: widget.authService,
+                    initialMessage: _restoreError,
+                    onLoggedIn: _onLoggedIn,
+                    onBackToLogin: _toggleSignUp,
+                  )
+                : LoginPage(
+                    key: const ValueKey('login'),
+                    authService: widget.authService,
+                    initialMessage: _restoreError,
+                    onLoggedIn: _onLoggedIn,
+                    onCreateAccount: _toggleSignUp,
+                  )
+          : HomeScreen(
+              user: _user!,
+              onLogOut: _logOut,
+              notificationService: widget.notificationService,
+            ),
     );
   }
 }
@@ -124,11 +183,13 @@ class AuthScreen extends StatefulWidget {
     required this.authService,
     required this.onLoggedIn,
     this.initialMessage,
+    this.onBackToLogin,
   });
 
   final AuthService authService;
   final ValueChanged<AuthUser> onLoggedIn;
   final String? initialMessage;
+  final VoidCallback? onBackToLogin;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -149,6 +210,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
+    _isSignUp = widget.onBackToLogin != null;
     _errorMessage = widget.initialMessage;
   }
 
@@ -208,13 +270,15 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text,
         );
         if (!mounted) return;
-        setState(() {
-          _isSignUp = false;
-          _successMessage =
-              'Account created. Check your email to verify it, then sign in.';
-          _passwordController.clear();
-          _confirmPasswordController.clear();
-        });
+        widget.onBackToLogin?.call();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created. Check your email to verify it, then sign in.',
+            ),
+          ),
+        );
       } else {
         final user = await widget.authService.logIn(
           username: _usernameController.text.trim(),
@@ -232,6 +296,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _switchMode() {
+    if (widget.onBackToLogin != null) {
+      widget.onBackToLogin!();
+      return;
+    }
+
     setState(() {
       _isSignUp = !_isSignUp;
       _errorMessage = null;
@@ -242,144 +311,196 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    const red = Color(0xFFB31517);
+    const backgroundRed = Color(0xFFE9E4DF);
+
+    InputDecoration signupInput(String label) {
+      return InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.black54),
+        filled: true,
+        fillColor: const Color(0xFFD9D9D9),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: Color(0xFF9E9E9E)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: Color(0xFF9E9E9E)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: red, width: 2),
+        ),
+      );
+    }
+
     return Scaffold(
+      backgroundColor: backgroundRed,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _BrandMark(),
-                    const SizedBox(height: 32),
-                    Text(
-                      _isSignUp ? 'Create your account' : 'Welcome back',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isSignUp
-                          ? 'Join your crew. Show up, get stronger, stay accountable.'
-                          : 'Sign in and get back to your crew.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    if (_successMessage != null) ...[
-                      _MessageBanner(
-                        message: _successMessage!,
-                        isSuccess: true,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (_errorMessage != null) ...[
-                      _MessageBanner(message: _errorMessage!, isSuccess: false),
-                      const SizedBox(height: 16),
-                    ],
-                    TextFormField(
-                      controller: _usernameController,
-                      validator: _validateUsername,
-                      textInputAction: _isSignUp
-                          ? TextInputAction.next
-                          : TextInputAction.next,
-                      textCapitalization: TextCapitalization.none,
-                      autocorrect: false,
-                      autofillHints: const [AutofillHints.username],
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                    ),
-                    if (_isSignUp) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _emailController,
-                        validator: _validateEmail,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        autofillHints: const [AutofillHints.email],
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.mail_outline),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      validator: _validatePassword,
-                      obscureText: _obscurePassword,
-                      textInputAction: _isSignUp
-                          ? TextInputAction.next
-                          : TextInputAction.done,
-                      autofillHints: [
-                        _isSignUp
-                            ? AutofillHints.newPassword
-                            : AutofillHints.password,
-                      ],
-                      onFieldSubmitted: _isSignUp ? null : (_) => _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          tooltip: _obscurePassword
-                              ? 'Show password'
-                              : 'Hide password',
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (_isSignUp) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        validator: _validateConfirmation,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submit(),
-                        decoration: const InputDecoration(
-                          labelText: 'Confirm password',
-                          prefixIcon: Icon(Icons.lock_outline),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _isSubmitting ? null : _submit,
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_isSignUp ? 'Create account' : 'Sign in'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _isSubmitting ? null : _switchMode,
-                      child: Text(
-                        _isSignUp
-                            ? 'Already have an account? Sign in'
-                            : "Don't have an account? Sign up",
-                      ),
+              constraints: const BoxConstraints(maxWidth: 679),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 36, 24, 28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x40000000),
+                      blurRadius: 25,
+                      offset: Offset(0, 4),
                     ),
                   ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Become a Bro!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 38,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          decorationColor: red,
+                          decorationThickness: 4,
+                        ),
+                      ),
+                      const SizedBox(height: 34),
+                      if (_successMessage != null) ...[
+                        _MessageBanner(
+                          message: _successMessage!,
+                          isSuccess: true,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_errorMessage != null) ...[
+                        _MessageBanner(
+                          message: _errorMessage!,
+                          isSuccess: false,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      TextFormField(
+                        controller: _usernameController,
+                        style: const TextStyle(color: Colors.black),
+                        validator: _validateUsername,
+                        textInputAction: TextInputAction.next,
+                        textCapitalization: TextCapitalization.none,
+                        autocorrect: false,
+                        autofillHints: const [AutofillHints.username],
+                        decoration: signupInput('Username'),
+                      ),
+                      if (_isSignUp) ...[
+                        const SizedBox(height: 25),
+                        TextFormField(
+                          controller: _emailController,
+                          style: const TextStyle(color: Colors.black),
+                          validator: _validateEmail,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autocorrect: false,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: signupInput('Email'),
+                        ),
+                      ],
+                      const SizedBox(height: 25),
+                      TextFormField(
+                        controller: _passwordController,
+                        style: const TextStyle(color: Colors.black),
+                        validator: _validatePassword,
+                        obscureText: _obscurePassword,
+                        textInputAction: _isSignUp
+                            ? TextInputAction.next
+                            : TextInputAction.done,
+                        autofillHints: [
+                          _isSignUp
+                              ? AutofillHints.newPassword
+                              : AutofillHints.password,
+                        ],
+                        onFieldSubmitted: _isSignUp ? null : (_) => _submit(),
+                        decoration: signupInput('Password').copyWith(
+                          suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? 'Show password'
+                                : 'Hide password',
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_isSignUp) ...[
+                        const SizedBox(height: 25),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          style: const TextStyle(color: Colors.black),
+                          validator: _validateConfirmation,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          decoration: signupInput('Confirm password'),
+                        ),
+                      ],
+                      const SizedBox(height: 23),
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isSubmitting ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: const BorderSide(color: red),
+                            ),
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _isSubmitting ? null : _switchMode,
+                        child: const Text(
+                          'Already a Bro? Sign In',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Color(0xFF546AC0)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -434,10 +555,16 @@ class _MessageBanner extends StatelessWidget {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.user, required this.onLogOut});
+  const HomeScreen({
+    super.key,
+    required this.user,
+    required this.onLogOut,
+    this.notificationService,
+  });
 
   final AuthUser user;
   final VoidCallback onLogOut;
+  final NotificationService? notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -473,6 +600,18 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 24),
+              if (notificationService != null)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          NotificationsPage(service: notificationService!),
+                    ),
+                  ),
+                  icon: const Icon(Icons.notifications),
+                  label: const Text('Notifications'),
+                ),
+              if (notificationService != null) const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: onLogOut,
                 icon: const Icon(Icons.logout),

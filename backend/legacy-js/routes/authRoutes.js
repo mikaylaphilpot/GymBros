@@ -30,7 +30,7 @@ router.post('/signup', async (req, res) => {
         return res.status(400).json({ message: 'Please fill out all fields!' });
     }
 
-    // Normalize username and email 
+    // Normalize username and email
     // They are case-insentive
     const normUsername = username.trim().toLowerCase();
     const normEmail = email.trim().toLowerCase();

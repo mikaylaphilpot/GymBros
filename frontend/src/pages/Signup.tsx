@@ -3,7 +3,8 @@ import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
 import { signup } from "../api/auth"
 
-// Styling for the SignUp component and its child elements.
+// The sign-up page keeps its layout and visual rules separate from the validation flow,
+// making it easier to update styling without affecting the API call behavior.
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-y-auto px-3 py-4"
 const background =
@@ -24,6 +25,8 @@ export default function SignUp() {
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // The API request should only happen after the form passes several checks so we
+  // avoid sending incomplete or invalid data to the backend.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
@@ -55,6 +58,8 @@ export default function SignUp() {
     setIsSubmitting(true)
 
     try {
+      // Capture the backend message so the user sees a concrete success state after
+      // account creation without losing the rest of the form layout.
       setMessage(await signup(username, email, password))
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to create your account.")
@@ -63,6 +68,8 @@ export default function SignUp() {
     }
   }
 
+  // Keep all sign-up inputs inside a single focused card to mirror the login screen and
+  // reduce distractions during account creation.
   return (
     <main className={page}>
       <img
@@ -110,6 +117,8 @@ export default function SignUp() {
           Password
         </label>
         <div className="group relative mt-3">
+          {/* The tooltip explains the password complexity rules without cluttering the form.
+              It appears on hover/focus so new users still have visible guidance. */}
           <input
             id="password"
             name="password"

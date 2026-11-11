@@ -1,9 +1,5 @@
 import mongoose from 'mongoose';
-import path from 'path';
-import dotenv from 'dotenv';
-
-// Load backend/.env when commands are run from the backend package directory.
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+import './env.js';
 
 export async function connectToMongoDB(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;

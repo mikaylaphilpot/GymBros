@@ -9,11 +9,15 @@ import type { Request, RequestHandler, Response } from "express";
 const router = Router();
 
 const requireCurrentUser: RequestHandler = (req, res, next) => {
-  if (
-    typeof req.userId !== "string" ||
-    typeof req.params.currentUserId !== "string" ||
-    req.userId !== req.params.currentUserId
-  ) {
+  if (typeof req.userId !== "string") {
+    return res.status(401).json({ message: "Invalid or missing authentication credentials." });
+  }
+
+  if (typeof req.params.currentUserId !== "string") {
+    return res.status(400).json({ message: "Invalid user ID." });
+  }
+
+  if (req.userId !== req.params.currentUserId) {
     return res.status(403).json({ message: "You cannot access another user's friends." });
   }
 
@@ -22,7 +26,7 @@ const requireCurrentUser: RequestHandler = (req, res, next) => {
 
 function getAuthenticatedUserId(req: Request, res: Response): string | undefined {
   if (typeof req.userId !== "string") {
-    res.status(401).json({ message: "Authorization unavailable" });
+    res.status(401).json({ message: "Invalid or missing authentication credentials." });
     return undefined;
   }
 
@@ -30,15 +34,13 @@ function getAuthenticatedUserId(req: Request, res: Response): string | undefined
 }
 
 // AI-assisted: Initial Implementation suggested by Copilot
-router.get("/search", async (req, res) => {
+router.get("/search", authMiddleware, async (req, res) => {
   try {
     const searchContents =
       typeof req.query.q === "string" ? req.query.q : "";
 
-    const currentUserId =
-      typeof req.query.currentUserId === "string"
-        ? req.query.currentUserId
-        : undefined;
+    const currentUserId = getAuthenticatedUserId(req, res);
+    if (!currentUserId) return;
 
     const users = await searchUsers(searchContents, currentUserId);
 
