@@ -8,6 +8,7 @@ export interface IFriends {
 
 // This interface describes fields stored by the Mongoose User model.
 export interface IUser {
+  name: string
   username: string
   email: string
   password: string
@@ -22,6 +23,12 @@ export interface IUser {
 }
 
 const UserSchema = new mongoose.Schema<IUser>({
+  name: {
+    type: String,
+    default: "",
+    trim: true,
+    maxlength: 100
+  },
   username: {
     type: String,
     required: true,

@@ -1,7 +1,14 @@
 import cors from "cors"
 import express from "express"
+import mongoose from "mongoose"
+import webpush from "web-push"
 import { connectToMongoDB } from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
+import { createMongoPushSubscriptionStore } from "./models/pushSubscription.js"
+import { createNotificationRouter } from "./routes/notificationRoutes.js"
+import { createNotificationStore } from "./models/notification.js"
+import { createDeviceTokenStore } from "./models/deviceToken.js"
+import { createFirebasePushSender } from "./services/firebaseNotifications.js"
 import scheduleRoutes from "./routes/scheduleRoutes.js"
 import userRoutes from "./routes/userRoutes.js"
 
@@ -19,17 +26,46 @@ app.get("/api/test", (_req, res) => {
   res.json({ message: "Backend is working!" })
 })
 
-// Register authentication routes (signup, login, and protected user profile)
-// All auth endpoints are prefixed with /api/auth
+// Register authentication, user, and schedule routes.
 app.use("/api/auth", authRoutes)
 app.use("/api/users", userRoutes)
 app.use("/api/schedules", scheduleRoutes)
 
+function configurePushNotifications(): void {
+  const subject = process.env.VAPID_SUBJECT
+  const publicKey = process.env.VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+
+  if (!subject || !publicKey || !privateKey) {
+    throw new Error(
+      "VAPID_SUBJECT, VAPID_PUBLIC_KEY, and VAPID_PRIVATE_KEY must be set in backend/.env.",
+    )
+  }
+
+  webpush.setVapidDetails(subject, publicKey, privateKey)
+}
+
 // Connect to MongoDB before starting the Express server
 async function startServer(): Promise<void> {
   try {
-    // Establish database connection using config/db.js
+    // Establish database connection using config/db.ts
     await connectToMongoDB()
+    configurePushNotifications()
+
+    const database = mongoose.connection.db
+    if (!database) {
+      throw new Error("MongoDB connection did not expose a database handle.")
+    }
+    app.use(
+      "/api/notifications",
+      createNotificationRouter({
+        store: createMongoPushSubscriptionStore(database),
+        notificationStore: createNotificationStore(database.collection("notifications")),
+        deviceTokenStore: createDeviceTokenStore(database.collection("deviceTokens")),
+        nativePushSender: createFirebasePushSender(),
+        allowDevTest: process.env.NODE_ENV !== "production",
+      }),
+    )
 
     // Start listening for incoming requests on port 5001
     const port = Number(process.env.PORT ?? 5001)

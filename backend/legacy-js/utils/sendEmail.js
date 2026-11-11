@@ -5,9 +5,9 @@ async function sendEmail(to, subject, text){
     try{
 
         await transporter.sendMail({
-            from: process.env.SMTP_USER, 
-            to: to, 
-            subject: subject, 
+            from: process.env.SMTP_USER,
+            to: to,
+            subject: subject,
             text: text
         });
 
@@ -15,7 +15,7 @@ async function sendEmail(to, subject, text){
     }catch(error){
 
         console.error('Send email error:', error);
-        throw error; 
+        throw error;
     }
 }
 

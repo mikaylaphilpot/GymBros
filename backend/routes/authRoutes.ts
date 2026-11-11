@@ -30,11 +30,18 @@ interface ResetPasswordBody {
   password: unknown;
 }
 
+interface UpdateProfileBody {
+  name: unknown;
+  username: unknown;
+  currentPassword: unknown;
+  password: unknown;
+}
+
 const router = express.Router();
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const verificationLinkFor = (token: string): string =>
-  `http://localhost:5001/api/auth/verify-email?token=${token}`;
+  `${process.env.PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/verify-email?token=${token}`;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -207,12 +214,100 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
 
     res.status(200).json({
       id: existingUser._id,
+      name: existingUser.name,
       username: existingUser.username,
       email: existingUser.email
     });
   } catch (error: unknown) {
     console.error('Internal error', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// PATCH /api/auth/me
+// Updates the authenticated user's name, username, and password. The current
+// password is required for every profile change.
+router.patch('/me', authMiddleware, async (
+  req: Request<Record<string, never>, unknown, UpdateProfileBody>,
+  res: Response
+) => {
+  if (!req.userId) {
+    res.status(401).json({ message: 'Token Verification Failed' });
+    return;
+  }
+
+  const { name, username, currentPassword, password } = req.body;
+
+  if (
+    typeof name !== 'string' || name.trim().length === 0 ||
+    typeof username !== 'string' || username.trim().length === 0 ||
+    typeof currentPassword !== 'string' || currentPassword.length === 0 ||
+    (password !== undefined && typeof password !== 'string')
+  ) {
+    res.status(400).json({ message: 'Name, username, and current password are required. A new password is optional.' });
+    return;
+  }
+
+  const normalizedName = name.trim();
+  const normalizedUsername = username.trim().toLowerCase();
+
+  if (normalizedName.length > 100) {
+    res.status(400).json({ message: 'Name must be 100 characters or fewer.' });
+    return;
+  }
+
+  if (typeof password === 'string' && !passwordRegex.test(password)) {
+    res.status(400).json({ message: 'Your Password does not meet requirements' });
+    return;
+  }
+
+  try {
+    const existingUser = await User.findById(req.userId);
+
+    if (!existingUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    if (!(await bcrypt.compare(currentPassword, existingUser.password))) {
+      res.status(401).json({ message: 'Current password is incorrect.' });
+      return;
+    }
+
+    const usernameOwner = await User.findOne({
+      username: normalizedUsername,
+      _id: { $ne: existingUser._id }
+    });
+
+    if (usernameOwner) {
+      res.status(409).json({ message: 'Username already in use' });
+      return;
+    }
+
+    existingUser.name = normalizedName;
+    existingUser.username = normalizedUsername;
+    if (typeof password === 'string') {
+      existingUser.password = await bcrypt.hash(password, 12);
+    }
+    await existingUser.save();
+
+    res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: {
+        id: existingUser._id,
+        name: existingUser.name,
+        username: existingUser.username,
+        email: existingUser.email
+      }
+    });
+  } catch (error: unknown) {
+    if (isDuplicateKeyError(error)) {
+      res.status(409).json({ message: 'Username already in use' });
+      return;
+    }
+
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Unable to update profile.' });
   }
 });
 
