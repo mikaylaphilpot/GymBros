@@ -4,7 +4,7 @@ import "../styles/homepage.css"
 type BroWorkoutWidgetProps = {
     status: string;
     name: string;
-    startTime: string //might have to chnage to time or something, bc its gonan be #:## yk?
+    startTime: string
     endTime: string;
     activity: string;
     icon: string;

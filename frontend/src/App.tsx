@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
 import EditUserInfoPage from './pages/EditUserInfoPage'
 import EditSchedulePage from './pages/EditSchedulePage'
+import ResetPasswordPage from "./pages/ResetPasswordPage"
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
 
       <Route path="/home-page" element={<HomePage />} />
       <Route path="/forgot-password" element={<ForgotPswdPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/profile-page" element={<ProfilePage />} />
       <Route path="/edit-user-info-page" element={<EditUserInfoPage />} />
       <Route path="/edit-schedule-page" element={<EditSchedulePage />} />

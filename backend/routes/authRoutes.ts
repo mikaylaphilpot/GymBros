@@ -328,10 +328,10 @@ router.post('/forgot-password', async (
     await existingUser.save();
 
     // For local testing; replace this URL with the frontend reset-password page.
-    const resetLink = `http://localhost:5001/api/auth/reset-password?token=${resetToken}`;
+    const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
     await sendEmail(
       exactEmail,
-      'Forger Password Link',
+      'Forget Password Link',
       `Click here to reset your password: ${resetLink}`
     );
 

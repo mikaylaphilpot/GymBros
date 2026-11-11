@@ -63,3 +63,41 @@ export async function signup(
   const result = await postAuth("signup", { username, email, password })
   return result.message ?? "Account created. Check your email to verify it."
 }
+
+
+export async function forgotPassword(email: string): Promise<string> {
+    const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to send reset email.");
+    }
+
+    return data.message;
+}
+
+
+export async function resetPassword(token: string, password: string): Promise<string> {
+    const response = await fetch(`${apiBaseUrl}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to reset password.");
+    }
+
+    return data.message;
+}
