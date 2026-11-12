@@ -142,7 +142,7 @@ p {
     padding: 15px;
 }
 
-.bro-workout-widget .iconImage, .user-workout-widget .iconImage, .checkbox-label {
+.user-workout-widget .iconImage, .checkbox-label {
     margin-left: auto;  
 }
 
@@ -175,6 +175,21 @@ p {
 
 .default {
     background-color: #FFFFFF;
+}
+
+.bro-workout-action {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.bro-workout-action:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 .buttons {

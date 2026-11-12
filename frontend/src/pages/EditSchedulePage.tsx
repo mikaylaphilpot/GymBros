@@ -3,8 +3,7 @@ import {
     getSchedule,
     addScheduleItem,
     updateSchedule,
-    deleteSchedule,
-    type ScheduleEntry
+    deleteSchedule
 } from "../api/schedule";
 import RoutingButton from "../components/RoutingButton";
 import ParagraphText from "../components/ParagraphText";

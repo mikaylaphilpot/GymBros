@@ -120,3 +120,59 @@ export async function deleteSchedule(id: string): Promise<void> {
         throw new Error(data.message ?? "Unable to delete schedule.");
     }
 }
+
+
+export async function getTodaysSchedule(): Promise<ScheduleEntry[]> {
+    const token = sessionStorage.getItem("authToken");
+
+    if (!token) {
+        throw new Error("You must be logged in to retrieve your schedule.");
+    }
+
+    const response = await fetch(`${scheduleApiUrl}/today`, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to retrieve today's schedule.");
+    }
+
+    return data as ScheduleEntry[];
+}
+
+export async function updateWorkoutCompletion(
+    scheduleId: string,
+    isCompletedToday: boolean
+): Promise<ScheduleEntry> {
+    const token = sessionStorage.getItem("authToken");
+
+    if (!token) {
+        throw new Error("You must be logged in to update workout completion.");
+    }
+
+    const response = await fetch(
+        `${scheduleApiUrl}/${scheduleId}/completion`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ isCompletedToday })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to update workout completion.");
+    }
+
+    return data as ScheduleEntry;
+}
+

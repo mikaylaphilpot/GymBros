@@ -160,7 +160,10 @@ export async function searchUsers(
   currentUserId: string,
 ): Promise<UserSearchResult[]> {
   const params = new URLSearchParams({ q: query, currentUserId })
-  const payload = await requestJson(`${usersApiUrl}/search?${params}`)
+  const payload = await requestJson(
+    `${usersApiUrl}/search?${params}`,
+    { headers: getAuthHeaders() }
+  )
 
   if (
     !Array.isArray(payload) ||

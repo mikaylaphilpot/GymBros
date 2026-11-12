@@ -55,10 +55,7 @@ export default function ProfilePage() {
 
                 {user && (
                     <>
-                        <WorkoutScheduleProfileSection
-                            title="Workout Schedule"
-                            workouts=""
-                        />
+                        <WorkoutScheduleProfileSection title="Workout Schedule" />
 
                         <UserInfoProfileSection
                             title="User Information"
