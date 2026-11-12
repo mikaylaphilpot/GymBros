@@ -68,7 +68,7 @@ body {
     font-size: 30px;
     text-decoration-line: underline;
     text-decoration-style: solid;
-    text-decoration-thickness: 6px;
+    text-decoration-thickness: 4px;
     text-decoration-color: #B31517;
     text-underline-offset: 5px;
 }
@@ -96,17 +96,13 @@ p {
     display: flex;
     flex-direction: row;
     gap: 15px;
+    margin-bottom: 10px;
 
-}
-
-.profile-no-gap-group img {
-    height: 50px;
-    width: 50px;
 }
 
 .line-divider{
     background-color: #B31517;
-    height: 8px;
+    height: 4px;
     border: 0;
     margin: 0;
   
@@ -119,9 +115,9 @@ p {
 }
 
 .general-text, .profile-information-box p {
-    font-size: 24px;
+    font-size: 20px;
     color: #000000;
-    padding: 10px 0px 20px 0px;
+    padding-bottom: 10px;
     line-height: 25px;
 }
 
@@ -130,7 +126,7 @@ p {
     flex-direction: row;
     align-items: center;
 
-    font-size: 24px; 
+    font-size: 20px; 
     font-weight: bold;
     line-height: 25px;
     color: #000000;
@@ -138,7 +134,7 @@ p {
     border-style: solid;
     border-radius: 20px;
     border-color: #B31517;
-    border-width: 6px;
+    border-width: 2px;
     padding: 15px;
 }
 
@@ -239,7 +235,7 @@ p {
 }
 
 .profile-schedule-widgets, .profile-information-box p, .edit-profile-box{
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .edit-profile-box {
@@ -251,7 +247,7 @@ p {
 }
 
 .edit-profile-box-item input {
-    font-size: 24px;
+    font-size: 20px;
     padding: 10px;
     background-color: #D9D9D9;
     border-style: none;
@@ -285,11 +281,11 @@ p {
     gap: 20px;
     font-size: 20px;
     align-items: center;
+    margin-bottom: 10px;
 }
 
 .schedule-item-box input {
     padding: 10px;
-    font-size: 20px;
     border-style: none;
     background-color: #D9D9D9;
     width: 29cqw;
@@ -363,4 +359,41 @@ p {
 
 .error-message {
     color: #B31517;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.notification-button {
+    background-color: white;
+    color: #B31517;
+    border: 2px solid #B31517;
+    border-radius: 20px;
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.notification-button:hover:not(:disabled) {
+    background-color: #B31517;
+    color: white;
+}
+
+.notification-button:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.message-text {
+    font-style: italic;
+}
+
+.completed-text {
+    color: #61B315;
 }

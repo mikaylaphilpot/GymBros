@@ -22,8 +22,8 @@ export default function UserInfoProfileSection({
                     label="Edit"
                     routingTo="/edit-user-info-page"
                     iconSrc={editIcon}
-                    height={60}
-                    width={90}
+                    height={30}
+                    width={30}
                 />
             </div>
 

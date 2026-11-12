@@ -14,7 +14,7 @@ export default function NotificationTestPage() {
     setStatus("")
     setIsSubscribing(true)
     try {
-      await subscribeToPushNotifications(userId)
+      await subscribeToPushNotifications()
       setStatus("Notifications enabled. You can now send a test notification.")
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Subscription failed")
@@ -27,7 +27,7 @@ export default function NotificationTestPage() {
     setStatus("")
     setIsSending(true)
     try {
-      await sendTestNotification(userId)
+      await sendTestNotification()
       setStatus("Test notification sent.")
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sending failed")

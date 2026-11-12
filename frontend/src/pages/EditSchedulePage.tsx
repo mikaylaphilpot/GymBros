@@ -237,7 +237,7 @@ export default function EditSchedulePage() {
 
                 <ParagraphText text="Select your workout days and input times for each of your activities." />
 
-                {isLoading && <p>Loading your saved schedule...</p>}
+                {isLoading && <p className="message-text">Loading your saved schedule...</p>}
 
                 {error && <p className="error-message">{error}</p>}
 

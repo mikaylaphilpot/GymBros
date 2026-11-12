@@ -180,14 +180,6 @@ export default function HomePage() {
     return (
         <main>
             <div className="white-container">
-                <RoutingButton
-                    label="Test Notif"
-                    routingTo="/test-notif-page"
-                    iconSrc={profileIcon}
-                    height={50}
-                    width={50}
-                />
-
                 <div className="no-gap-group-vertical">
                     <div className="header">
                         <PageTitle label="Hey, Bro!" />
@@ -216,12 +208,12 @@ export default function HomePage() {
                 <div className="user-schedule-box">
                     <ParagraphText text="Here's your schedule for the day." />
 
-                    {loading && <p>Loading your workouts...</p>}
+                    {loading && <p className="message-text">Loading your workouts...</p>}
 
                     {error && <p className="error-message">{error}</p>}
 
                     {!loading && !error && schedule.length === 0 && (
-                        <p>You don't have any workouts scheduled for today!</p>
+                        <p className="message-text">You don't have any workouts scheduled for today!</p>
                     )}
 
                     {!loading && !error && activeWorkouts.map((workout) => (
@@ -240,14 +232,14 @@ export default function HomePage() {
 
                     {!loading && !error && completedWorkouts.map((workout) => (
                         <p key={workout._id}>
-                            <strong>✓ Completed:</strong> {workout.activity}
+                            <strong className="completed-text">✓ Completed:</strong> {workout.activity}
                         </p>
                     ))}
 
                     {!loading && !error &&
                         schedule.length > 0 &&
                         activeWorkouts.length === 0 && (
-                            <p>You've completed all your workouts today! 🎉</p>
+                            <p className="message-text">You've completed all your workouts today!</p>
                         )}
                 </div>
 
@@ -264,14 +256,14 @@ export default function HomePage() {
                 <div className="bros-schedule-box">
                     <ParagraphText text="Check in on your bros and make sure they're keeping up with their workouts!" />
 
-                    {friendsLoading && <p>Loading your bros...</p>}
+                    {friendsLoading && <p className="message-text">Loading your bros...</p>}
 
                     {friendsError && (
                         <p className="error-message">{friendsError}</p>
                     )}
 
                     {!friendsLoading && !friendsError && friends.length === 0 && (
-                        <p>None of your bros have workouts scheduled today!</p>
+                        <p className="message-text">None of your bros have workouts scheduled today!</p>
                     )}
                     
                     {!friendsLoading && !friendsError && friends.map((friend) =>

@@ -64,12 +64,12 @@ export default function WorkoutScheduleProfileSection({
                 />
             </div>
 
-            {loading && <p>Loading workout schedule...</p>}
+            {loading && <p className="message-text">Loading workout schedule...</p>}
 
             {error && <p className="error-message">{error}</p>}
 
             {!loading && !error && sortedWorkouts.length === 0 && (
-                <p>You haven't added any workouts to your schedule yet.</p>
+                <p className="message-text">You haven't added any workouts to your schedule yet.</p>
             )}
 
             {!loading && !error && sortedWorkouts.map((workout) => (

@@ -139,7 +139,7 @@ export default function EditUserInfoPage() {
                     <hr className="line-divider" />
                 </div>
 
-                {loading && <p>Loading profile...</p>}
+                {loading && <p className="message-text">Loading profile...</p>}
 
                 {!loading && user && (
                     <>

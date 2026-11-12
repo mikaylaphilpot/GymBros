@@ -41,11 +41,27 @@ const daysOfWeek: readonly DayOfWeek[] = [
 const timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM)$/i;
 
 function getTodayDateKey(): string {
-    return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function getTodayName(): DayOfWeek {
-    return daysOfWeek[(new Date().getUTCDay() + 6) % 7];
+  const days: DayOfWeek[] = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  return days[new Date().getDay()];
 }
 
 // This type guard confirms the day is one of the model's allowed values.
