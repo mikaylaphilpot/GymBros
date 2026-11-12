@@ -18,11 +18,9 @@ type EditableField =
     | "currentPassword"
     | "newPassword";
 
+
 export default function EditUserInfoPage() {
-    const navigate = useNavigate();
-
     const [user, setUser] = useState<UserProfile | null>(null);
-
     const [name, setName] = useState("");
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -34,7 +32,9 @@ export default function EditUserInfoPage() {
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
 
-    // Load the current user's information when the page opens.
+    const navigate = useNavigate();
+
+    //Load the current user's information when the page opens
     useEffect(() => {
         async function loadProfile() {
             try {
@@ -58,6 +58,7 @@ export default function EditUserInfoPage() {
         loadProfile();
     }, []);
 
+    //Updates input boxes as user types in their data
     function handleChange(inputName: EditableField, value: string) {
         switch (inputName) {
             case "name":
@@ -104,7 +105,7 @@ export default function EditUserInfoPage() {
 
             setMessage(result);
 
-            // Return to the profile page after a successful update.
+            //Return to the profile page after a successful update
             navigate("/profile-page");
 
         } catch (error) {
@@ -141,6 +142,7 @@ export default function EditUserInfoPage() {
 
                 {loading && <p className="message-text">Loading profile...</p>}
 
+                {/* Pulls user info from DB and loads it onto screen for editing */}
                 {!loading && user && (
                     <>
                         <EditUserInfo

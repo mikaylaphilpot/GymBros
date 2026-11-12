@@ -64,7 +64,7 @@ export async function signup(
   return result.message ?? "Account created. Check your email to verify it."
 }
 
-
+//sends user email to backend for verification and to send reset password link
 export async function forgotPassword(email: string): Promise<string> {
     const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
         method: "POST",
@@ -83,7 +83,7 @@ export async function forgotPassword(email: string): Promise<string> {
     return data.message;
 }
 
-
+//Takes new user password, verifies token, and updates their password in the DB
 export async function resetPassword(token: string, password: string): Promise<string> {
     const response = await fetch(`${apiBaseUrl}/api/auth/reset-password`, {
         method: "POST",
@@ -110,6 +110,7 @@ export interface UserProfile {
   email: string;
 }
 
+//Pulls logged-in user's information from DB
 export async function getCurrentUser(): Promise<UserProfile> {
   const token = sessionStorage.getItem("authToken");
 
@@ -133,6 +134,7 @@ export async function getCurrentUser(): Promise<UserProfile> {
   return data as UserProfile;
 }
 
+//After user edits their information and clicks save button, updates user's info across the site and in DB
 export async function updateCurrentUser(
   name: string,
   username: string,

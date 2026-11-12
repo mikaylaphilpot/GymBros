@@ -6,6 +6,7 @@ type AddDayItemProps = {
     onAdd: (day: string) => void;
 }
 
+//On EditSchedulePage, Adds Day header when the corresponding day checkbox is selected
 export default function AddDayItem({day, onAdd}: AddDayItemProps) {
 
     return (

@@ -110,6 +110,7 @@ function parseFriend(value: unknown): Friend | null {
   return value
 }
 
+//Based on user ID, gets list of all of their bros' workouts to be displayed on the HomePage
 function isFriendWorkout(value: unknown): value is FriendWorkout {
   return isFriend(value) && Array.isArray((value as FriendWorkout).workouts) &&
     (value as FriendWorkout).workouts.every((workout) =>
@@ -120,6 +121,7 @@ function isFriendWorkout(value: unknown): value is FriendWorkout {
       typeof workout.isCompletedToday === "boolean")
 }
 
+//Calls API to sort bros' workouts by day and selects only the ones occuring on the current day to be displayed
 export async function getFriendsTodayWorkouts(currentUserId: string): Promise<FriendWorkout[]> {
   const payload = await requestJson(
     `${usersApiUrl}/${encodeURIComponent(currentUserId)}/friends/workouts/today`,
@@ -131,6 +133,7 @@ export async function getFriendsTodayWorkouts(currentUserId: string): Promise<Fr
   return payload
 }
 
+//When user clicks the bug/congratulate button, calls API to send the correct browser notification to their bro
 export async function sendFriendNotification(
   friendId: string,
   action: "bug" | "congratulate",
@@ -141,13 +144,14 @@ export async function sendFriendNotification(
   })
 }
 
+//Gets signed-in user's ID to use for enabling notifications
 export async function getCurrentUserId(): Promise<string> {
   const token = getAuthToken()
   const payload = await requestJson(`${authApiUrl}/me`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 
-  // Get the account ID from the token-backed endpoint rather than trusting client input.
+  //Get the account ID from the token-backed endpoint rather than trusting client input
   if (!isRecord(payload) || typeof payload.id !== "string") {
     throw new Error("The server returned invalid account data.")
   }

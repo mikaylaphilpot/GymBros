@@ -44,6 +44,7 @@ export interface NewScheduleEntry {
     activity: string;
 }
 
+//Sends the schedule item to the DB and also returns its data to be used on frontend
 export async function addScheduleItem(entry: NewScheduleEntry): Promise<ScheduleEntry> {
     const token = sessionStorage.getItem("authToken");
 
@@ -71,7 +72,7 @@ export async function addScheduleItem(entry: NewScheduleEntry): Promise<Schedule
 
 }
 
-
+//Updates existing schedule item's data in the DB
 export async function updateSchedule(
     id: string,
     entry: NewScheduleEntry
@@ -100,7 +101,7 @@ export async function updateSchedule(
     return data as ScheduleEntry;
 }
 
-// Delete one schedule entry from the database.
+//Delete one schedule entry from the DB
 export async function deleteSchedule(id: string): Promise<void> {
     const token = sessionStorage.getItem("authToken");
 
@@ -121,7 +122,7 @@ export async function deleteSchedule(id: string): Promise<void> {
     }
 }
 
-
+//Fetches user's schedule for the day from the DB
 export async function getTodaysSchedule(): Promise<ScheduleEntry[]> {
     const token = sessionStorage.getItem("authToken");
 
@@ -145,6 +146,7 @@ export async function getTodaysSchedule(): Promise<ScheduleEntry[]> {
     return data as ScheduleEntry[];
 }
 
+//Updates the variable isCompletedToday in the DB based on user workout completion
 export async function updateWorkoutCompletion(
     scheduleId: string,
     isCompletedToday: boolean

@@ -11,7 +11,7 @@ type ButtonProps = {
     onClick?: () => void;
 };
 
-
+//Takes in button specifications to decide and display the correct type of button with corresponding functionality
 export default function RoutingButton({label, routingTo, iconSrc, height = 60, width = 60, normalButton, onClick}: ButtonProps) {
     if (onClick) {
         return (

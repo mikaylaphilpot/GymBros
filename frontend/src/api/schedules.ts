@@ -31,6 +31,7 @@ async function request(path: string, init?: RequestInit): Promise<unknown> {
   return payload
 }
 
+//Confirms the structure of a schedule item is as expected before use
 function isSchedule(value: unknown): value is Schedule {
   return typeof value === "object" && value !== null &&
     typeof (value as Schedule)._id === "string" &&
@@ -41,6 +42,7 @@ function isSchedule(value: unknown): value is Schedule {
     typeof (value as Schedule).isCompletedToday === "boolean"
 }
 
+//Fetches user's schedule for the day from the DB
 export async function getTodaySchedule(): Promise<Schedule[]> {
   const payload = await request("/today")
   if (!Array.isArray(payload) || !payload.every(isSchedule)) {
@@ -49,6 +51,7 @@ export async function getTodaySchedule(): Promise<Schedule[]> {
   return payload
 }
 
+//Updates the variable isCompletedToday in the DB based on user workout completion
 export async function setScheduleCompletion(
   scheduleId: string,
   isCompletedToday: boolean,

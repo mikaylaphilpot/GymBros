@@ -5,6 +5,7 @@ import ParagraphText from "../components/ParagraphText";
 import "../styles/homepage.css";
 import { forgotPassword } from "../api/auth";
 
+
 export default function ForgotPswdPage() {
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
@@ -19,6 +20,7 @@ export default function ForgotPswdPage() {
         setIsSending(true);
 
         try {
+            //Calls function to send reset password email to user
             const result = await forgotPassword(email.trim());
             setMessage(result);
         } catch (error) {
@@ -43,6 +45,7 @@ export default function ForgotPswdPage() {
 
                     <ParagraphText text="Enter email below and we'll send you a password reset link." />
 
+                    {/* Takes user email and sends a password reset link to that address */}
                     <form className="forget-password-box" onSubmit={handleSubmit}>
                         <label htmlFor="email">Email</label>
                         <input

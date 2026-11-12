@@ -15,6 +15,7 @@ type EditUserInfoProps = {
     ) => void;
 };
 
+//Tracks user input as they update or add their information to EditUserInfoPage
 export default function EditUserInfo({
     name,
     username,
@@ -62,6 +63,7 @@ export default function EditUserInfo({
                 />
             </div>
 
+            {/* Must input password no matter what chnage you make */}
             <div className="edit-profile-box-item">
                 <label htmlFor="currentPassword">
                     <strong>Current Password: </strong>
@@ -90,6 +92,7 @@ export default function EditUserInfo({
                 </button>
             </div>
 
+            {/* New password is optional */}
             <div className="edit-profile-box-item">
                 <label htmlFor="newPassword">
                     <strong>New Password: </strong>

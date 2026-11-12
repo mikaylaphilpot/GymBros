@@ -12,6 +12,8 @@ import brosIcon from "../assets/brosIcon.png";
 import profileIcon from "../assets/profileIcon.png";
 import UserWorkoutWidget from "../components/UserWorkoutWidget";
 
+
+//Importing API helpers for page functionality
 import {
     getTodaysSchedule,
     updateWorkoutCompletion,
@@ -25,6 +27,7 @@ import {
     type FriendWorkout
 } from "../api/friends";
 
+//Pulls isCompletedToday data from bro and determines what color widget should be
 function getBroWorkoutStatus(
     workout: FriendWorkout["workouts"][number]
 ): "completed" | "overdue" | "default" {
@@ -56,6 +59,7 @@ function getBroWorkoutStatus(
     return currentMinutes >= workoutEndMinutes ? "overdue" : "default";
 }
 
+
 export default function HomePage() {
     const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,7 +73,7 @@ export default function HomePage() {
     const [friendActionError, setFriendActionError] = useState("");
     const [friendActionSuccess, setFriendActionSuccess] = useState("");
 
-
+    //Loads user's personal schedule when user navigates to page
     useEffect(() => {
         async function loadSchedule() {
             try {
@@ -89,6 +93,7 @@ export default function HomePage() {
         loadSchedule();
     }, []);
 
+    //Pulls user ID to determine which bro workouts to display on home page, color is determined by completion status
     useEffect(() => {
         async function loadFriendsWorkouts() {
             try {
@@ -121,18 +126,19 @@ export default function HomePage() {
         (workout) => workout.isCompletedToday
     );
 
+    //Updates home page and backend when user completes a workout
     async function handleWorkoutCompletion(
         workoutId: string,
         checked: boolean
     ) {
         try {
-            // Save the change to the backend first.
+            //Save the change to the backend first
             const updatedWorkout = await updateWorkoutCompletion(
                 workoutId,
                 checked
             );
 
-            // Update the displayed schedule using the backend response.
+            //Update the displayed schedule using the backend response
             setSchedule((previousSchedule) =>
                 previousSchedule.map((workout) =>
                     workout._id === workoutId ? updatedWorkout : workout
@@ -147,7 +153,7 @@ export default function HomePage() {
         }
     }
 
-
+    //When bug or congratulate button pressed, sends notification to the user's bro if their notifications are enabled
     async function handleFriendAction(
         friendId: string,
         workoutKey: string,
@@ -184,6 +190,7 @@ export default function HomePage() {
                     <div className="header">
                         <PageTitle label="Hey, Bro!" />
                         <div className="no-gap-group-horizontal">
+                            {/* Navigation icons for Bros and Profile pages */}
                             <RoutingButton
                                 label="Bros"
                                 routingTo="/friends"
@@ -216,6 +223,7 @@ export default function HomePage() {
                         <p className="message-text">You don't have any workouts scheduled for today!</p>
                     )}
 
+                    {/* Loads user's schedule based on day/completion status */}
                     {!loading && !error && activeWorkouts.map((workout) => (
                         <UserWorkoutWidget
                             key={workout._id}
@@ -230,6 +238,7 @@ export default function HomePage() {
                         />
                     ))}
 
+                    {/* Displays message when workout is completed and when all workouts are completed for the day */}
                     {!loading && !error && completedWorkouts.map((workout) => (
                         <p key={workout._id}>
                             <strong className="completed-text">✓ Completed:</strong> {workout.activity}
@@ -252,7 +261,7 @@ export default function HomePage() {
                     <hr className="line-divider" />
                 </div>
 
-                
+                {/* Displays your bros' workouts and completion status. Bug them with the bug and congratulate icons */}
                 <div className="bros-schedule-box">
                     <ParagraphText text="Check in on your bros and make sure they're keeping up with their workouts!" />
 

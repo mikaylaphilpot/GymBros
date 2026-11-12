@@ -4,6 +4,8 @@ import PageTitle from "../components/PageTitle";
 import "../styles/homepage.css";
 import { resetPassword } from "../api/auth";
 
+
+{/* Where the reset password link routes users to update and save their password */}
 export default function ResetPasswordPage() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get("token");
@@ -14,6 +16,7 @@ export default function ResetPasswordPage() {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    //validates user's token and passwords matching before updating their password
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -56,6 +59,7 @@ export default function ResetPasswordPage() {
 
                     <p>Enter and confirm your new password below.</p>
 
+                    {/* Must confirm password in separate box */}
                     <form className="forget-password-box" onSubmit={handleSubmit}>
                         <label htmlFor="password">New Password</label>
                         <input

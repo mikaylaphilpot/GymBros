@@ -12,6 +12,7 @@ type BroWorkoutWidgetProps = {
     disabled?: boolean;
 }
 
+//On HomePage, displays your bros' workout widgets with the appropriate colors and ability to "bug your bros"
 export default function BroWorkoutWidget({
     status,
     name,

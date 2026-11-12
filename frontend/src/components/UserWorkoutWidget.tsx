@@ -10,6 +10,7 @@ type UserWorkoutWidgetProps = {
     onComplete?: (checked: boolean) => void;
 }
 
+//Displays user's schedule in widget form on HomePage
 export default function UserWorkoutWidget({
     day,
     startTime,

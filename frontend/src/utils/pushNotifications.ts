@@ -26,6 +26,7 @@ function getAuthToken(): string {
   return token
 }
 
+//Attempts to enroll user in push notifications from browser
 export async function subscribeToPushNotifications(): Promise<PushSubscriptionJson> {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported by this browser")
@@ -81,6 +82,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscriptionJs
   return serializedSubscription
 }
 
+//Sends a test notification to the user to confirm subscription is active and working
 export async function sendTestNotification(): Promise<void> {
   const token = getAuthToken()
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"

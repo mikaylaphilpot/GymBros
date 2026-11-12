@@ -8,6 +8,7 @@ type WorkoutScheduleProfileSectionProps = {
     title: string;
 };
 
+//The top component of ProfilePage, displays all user workout schedule information
 export default function WorkoutScheduleProfileSection({
     title
 }: WorkoutScheduleProfileSectionProps) {
@@ -15,6 +16,7 @@ export default function WorkoutScheduleProfileSection({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    //Loads schedule as user navigates to page
     useEffect(() => {
         async function loadSchedule() {
             try {
@@ -34,7 +36,7 @@ export default function WorkoutScheduleProfileSection({
         loadSchedule();
     }, []);
 
-    // Display workouts in weekday order.
+    //Display workouts in weekday order
     const dayOrder = [
         "Monday",
         "Tuesday",

@@ -10,6 +10,7 @@ type AddScheduleItemProps = {
     onDelete: (id: number) => void;
 };
 
+//On EditSchedulePage, adds new schedule item under corresponding Day header and updates with user input
 export default function AddScheduleItem({
     id,
     startTime,

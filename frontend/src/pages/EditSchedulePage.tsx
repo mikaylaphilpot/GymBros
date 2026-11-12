@@ -16,6 +16,7 @@ import PageTitle from "../components/PageTitle";
 import ScheduleCheckboxes from "../components/ScheduleCheckboxes";
 import AddDayItem from "../components/AddDayItem";
 
+
 const days = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
 
 type ScheduleDraft = {
@@ -27,6 +28,7 @@ type ScheduleDraft = {
     activity: string;
 };
 
+//Convert day names on checkbox labels to store properly in database
 const shortDayNames: Record<string, string> = {
     Sunday: "Sun",
     Monday: "Mon",
@@ -47,6 +49,7 @@ const fullDayNames: Record<string, string> = {
     Sat: "Saturday"
 };
 
+//Convert a schedule item's time values to the format required by DB
 function convertTo24Hour(time: string): string {
     const [timePart, period] = time.split(" ");
     let [hour, minute] = timePart.split(":").map(Number);
@@ -65,6 +68,7 @@ function convertTo12Hour(time: string): string {
 
     return `${displayHour}:${minute} ${period}`;
 }
+
 
 export default function EditSchedulePage() {
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -89,7 +93,7 @@ export default function EditSchedulePage() {
         }
     }
 
-    // Add a new, empty schedule entry for the selected day.
+    //Add a new, empty schedule entry for the selected day
     function onAdd(day: string) {
         setScheduleItems(prev => [
             ...prev,
@@ -105,7 +109,7 @@ export default function EditSchedulePage() {
         setNextId(prev => prev + 1);
     }
 
-    // Update the specific field of the specific schedule entry.
+    //Update the specific field of the specific schedule entry
     function handleItemChange(
         id: number,
         field: "startTime" | "endTime" | "activity",
@@ -120,6 +124,7 @@ export default function EditSchedulePage() {
         );
     }
 
+    //Saves/updates user's schedule info and sends to backend when button is clicked
     async function handleSave() {
         try {
             for (const item of scheduleItems) {
@@ -135,10 +140,10 @@ export default function EditSchedulePage() {
                 };
 
                 if (item.mongoId) {
-                    // Update an existing database entry
+                    //Update an existing database entry
                     await updateSchedule(item.mongoId, entry);
                 } else {
-                    // Create a new database entry
+                    //Create a new database entry
                     await addScheduleItem(entry);
                 }
             }
@@ -151,12 +156,13 @@ export default function EditSchedulePage() {
         }
     }
 
+    //Deletes and removes a single schedule item from database
     async function handleDelete(id: number) {
         const item = scheduleItems.find(item => item.id === id);
 
         if (!item) return;
 
-        // Ask the user to confirm before deleting.
+        //Ask the user to confirm before deleting
         const confirmed = window.confirm(
             "Are you sure you want to delete this schedule entry?"
         );
@@ -164,12 +170,12 @@ export default function EditSchedulePage() {
         if (!confirmed) return;
 
         try {
-            // Only send a DELETE request if the entry already exists in MongoDB.
+            //Only send a DELETE request if the entry already exists in MongoDB
             if (item.mongoId) {
                 await deleteSchedule(item.mongoId);
             }
 
-            // Remove the entry from the frontend either way.
+            //Remove the entry from the frontend either way
             setScheduleItems(prev =>
                 prev.filter(item => item.id !== id)
             );
@@ -179,8 +185,7 @@ export default function EditSchedulePage() {
         }
     }
 
-
-
+    //Loads stored schedule upon opening the edit page
     useEffect(() => {
         async function loadSchedule() {
             try {
@@ -188,7 +193,7 @@ export default function EditSchedulePage() {
 
                 const entries = await getSchedule();
 
-                // Convert database entries into the format used by our form
+                //Convert database entries into the format used by our form
                 const drafts: ScheduleDraft[] = entries.map((entry, index) => ({
                     id: index + 1,
                     mongoId: entry._id,
@@ -200,7 +205,7 @@ export default function EditSchedulePage() {
 
                 setScheduleItems(drafts);
 
-                // Automatically check the days that already have schedule entries
+                //Automatically check the days that already have schedule entries
                 setSelectedDays([...new Set(drafts.map(item => item.day))]);
 
                 setNextId(entries.length + 1);
@@ -219,6 +224,7 @@ export default function EditSchedulePage() {
         <main>
             <div className="white-container">
                 <div className="left-align-button">
+                    {/* Returns to Profile page on click */}
                     <RoutingButton
                         label="Cancel"
                         routingTo="/profile-page"
@@ -244,6 +250,7 @@ export default function EditSchedulePage() {
 
                 {!isLoading && !error && (
                     <>
+                        {/* Displays checkbox for each day that, when clicked, adds a Day header to bottom of page for schedule building */}
                         <div className="schedule-checkboxes general-text">
                             {days.map(day => (
                                 <ScheduleCheckboxes
@@ -256,6 +263,7 @@ export default function EditSchedulePage() {
                         </div>
 
                         <div className="add-schedule-items">
+                            {/* Only displays Day headers that have been selected, and users can edit, add or delete schedule items */}
                             {days
                                 .filter(day => selectedDays.includes(day))
                                 .map(day => (

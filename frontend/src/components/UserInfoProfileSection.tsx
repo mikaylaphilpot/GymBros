@@ -8,6 +8,7 @@ type UserInfoProfileSectionProps = {
     email: string;
 };
 
+//The bottom component of ProfilePage, displays all user information
 export default function UserInfoProfileSection({
     title,
     name,

@@ -12,6 +12,8 @@ import {
     hasPushSubscription
 } from "../utils/pushNotifications";
 
+
+//Displays user information and workout schedule, both can be edited by clicking the edit buttons
 export default function ProfilePage() {
     const [user, setUser] = useState<UserProfile | null>(null);
     const [error, setError] = useState("");
@@ -22,6 +24,7 @@ export default function ProfilePage() {
 
     const [notificationError, setNotificationError] = useState("");
 
+    //Loads profile page when user first navigates to it
     useEffect(() => {
         async function loadProfile() {
             try {
@@ -45,6 +48,7 @@ export default function ProfilePage() {
         loadProfile();
     }, []);
 
+    //When Enable Notifications button is pressed, carries out the logic of the NotificationTestPage to enroll user in browser notifications
     async function handleEnableNotifications() {
         try {
             setNotificationError("");
@@ -80,6 +84,7 @@ export default function ProfilePage() {
                     <div className="header profile-header">
                         <PageTitle label="Profile" />
 
+                        {/* Button to enable notifications */}
                         <button
                             className="notification-button"
                             onClick={handleEnableNotifications}
@@ -106,6 +111,7 @@ export default function ProfilePage() {
 
                 {!user && !error && <p className="message-text">Loading profile...</p>}
 
+                {/* Main body of page with schedule and user information components pulling data from the DB */}
                 {user && (
                     <>
                         <WorkoutScheduleProfileSection title="Workout Schedule" />
@@ -119,6 +125,7 @@ export default function ProfilePage() {
                     </>
                 )}
 
+                {/* Signs user out of their profile */}
                 <RoutingButton
                     label="Sign Out"
                     routingTo="/"
