@@ -14,7 +14,7 @@ const overlay =
 const popup =
   "flex min-h-[320px] max-h-[88dvh] w-full max-w-[340px] flex-col overflow-y-auto rounded-lg bg-white px-4 py-5 shadow-[0_4px_16px_#000]"
 const title =
-  "self-start font-['Inter:Bold'] text-[21px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
+  "self-start text-[21px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
 const description = "mt-2 text-left text-[13px]"
 const searchField =
   "mt-2.5 flex h-8 items-center gap-1.5 rounded-md border-2 border-[#919191] px-2"

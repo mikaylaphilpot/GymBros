@@ -12,7 +12,7 @@ import AddFriends from "./AddFriends"
 
 // The friends page keeps the page-level layout and card styling in one set of constants so the
 // section content remains easy to scan and consistent across the app.
-const page = "relative min-h-dvh overflow-x-hidden"
+const page = "relative min-h-dvh overflow-x-hidden font-sans"
 const background = "pointer-events-none fixed inset-0 size-full object-cover"
 const panel =
   "relative mx-auto min-h-dvh w-full max-w-[600px] bg-white px-4 pb-6 pt-3 shadow-[0_4px_16px_#000] sm:px-7 lg:px-8"
@@ -25,7 +25,7 @@ const searchInput =
 const addButton =
   "rounded-lg border border-[#ccc] bg-[#b31517] px-3 py-1.5 text-sm text-white hover:bg-[#951214]"
 const title =
-  "mt-5 block text-left font-['Inter:Bold'] text-[30px]! leading-tight font-bold underline decoration-[#B31517] decoration-[12.5%] underline-offset-4 sm:text-[34px]!"
+  "mt-5 block text-left text-[30px]! leading-tight font-bold underline decoration-[#B31517] decoration-[12.5%] underline-offset-4 sm:text-[34px]!"
 const sectionTitle = "text-left text-lg leading-none"
 const menuButton =
   "rounded-full p-1.5 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-[#b31517]"
@@ -69,7 +69,7 @@ function FriendCard({
           className="size-6 shrink-0 object-contain"
         />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold">{friend.username}</p>
+          <p className="truncate text-[15px] font-semibold">{friend.username}</p>
           <p className="text-xs text-gray-700">{statistic}</p>
         </div>
       </div>
