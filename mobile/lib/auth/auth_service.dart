@@ -96,6 +96,52 @@ class AuthService {
     );
   }
 
+  Future<void> resendVerificationEmail({required String email}) async {
+    await _request(
+      'resend-verification',
+      method: 'POST',
+      body: {'email': email},
+      expectedStatus: 200,
+      acceptedStatuses: const {404},
+    );
+  }
+
+  Future<void> verifyEmail({required String token}) async {
+    await _request(
+      'verify-email',
+      method: 'GET',
+      expectedStatus: 200,
+      queryParameters: {'token': _tokenFromInput(token)},
+    );
+  }
+
+  Future<void> requestPasswordReset({required String email}) async {
+    await _request(
+      'forgot-password',
+      method: 'POST',
+      body: {'email': email},
+      expectedStatus: 200,
+    );
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    await _request(
+      'reset-password',
+      method: 'POST',
+      body: {'token': _tokenFromInput(token), 'password': password},
+      expectedStatus: 200,
+    );
+  }
+
+  String _tokenFromInput(String value) {
+    final trimmedValue = value.trim();
+    final uri = Uri.tryParse(trimmedValue);
+    return uri?.queryParameters['token'] ?? trimmedValue;
+  }
+
   Future<AuthUser> logIn({
     required String username,
     required String password,
@@ -166,8 +212,12 @@ class AuthService {
     Map<String, String> headers = const {},
     Map<String, Object?>? body,
     required int expectedStatus,
+    Set<int> acceptedStatuses = const {},
+    Map<String, String>? queryParameters,
   }) async {
-    final uri = _baseUri.resolve(path);
+    final uri = _baseUri
+        .resolve(path)
+        .replace(queryParameters: queryParameters);
     final requestHeaders = <String, String>{
       'Accept': 'application/json',
       if (body != null) 'Content-Type': 'application/json',
@@ -195,7 +245,8 @@ class AuthService {
     }
 
     final decoded = _decodeResponse(response.body);
-    if (response.statusCode != expectedStatus) {
+    if (response.statusCode != expectedStatus &&
+        !acceptedStatuses.contains(response.statusCode)) {
       final message = decoded['message'];
       throw AuthException(
         message is String ? message : 'Request failed. Please try again.',

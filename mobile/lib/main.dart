@@ -240,6 +240,70 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  Future<void> _resendVerificationEmail() async {
+    final controller = TextEditingController();
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Resend verification email'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.emailAddress,
+          autofillHints: const [AutofillHints.email],
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Send email'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (email == null || email.isEmpty || !mounted) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      await widget.authService.resendVerificationEmail(email: email);
+      if (!mounted) return;
+      setState(() {
+        _successMessage = 'If an unverified account exists for that email, a verification email will be sent.';
+      });
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _openPasswordReset() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            ForgotPasswordScreen(authService: widget.authService),
+      ),
+    );
+  }
+
+  void _openEmailVerification() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            EmailVerificationScreen(authService: widget.authService),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -370,6 +434,24 @@ class _AuthScreenState extends State<AuthScreen> {
                             )
                           : Text(_isSignUp ? 'Create account' : 'Sign in'),
                     ),
+                    if (!_isSignUp) ...[
+                      TextButton(
+                        onPressed: _isSubmitting ? null : _openPasswordReset,
+                        child: const Text('Forgot password?'),
+                      ),
+                      TextButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : _resendVerificationEmail,
+                        child: const Text('Resend verification email'),
+                      ),
+                      TextButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : _openEmailVerification,
+                        child: const Text('I have a verification link'),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: _isSubmitting ? null : _switchMode,
@@ -406,6 +488,337 @@ class _BrandMark extends StatelessWidget {
               ?.copyWith(letterSpacing: 3, fontWeight: FontWeight.w900),
         ),
       ],
+    );
+  }
+}
+
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key, required this.authService});
+
+  final AuthService authService;
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _tokenController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _resetRequested = false;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  String? _successMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _tokenController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Enter your email';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Enter your new password';
+    if (!RegExp(
+      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    ).hasMatch(value)) {
+      return 'Use 8+ characters with uppercase, lowercase, a number, and a symbol (@\$!%*?&)';
+    }
+    return null;
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      if (!_resetRequested) {
+        await widget.authService.requestPasswordReset(
+          email: _emailController.text.trim(),
+        );
+        if (!mounted) return;
+        setState(() {
+          _resetRequested = true;
+          _successMessage = 'If an account exists for that email, a password reset email will be sent. Paste the reset link or token below.';
+        });
+      } else {
+        if (_passwordController.text != _confirmPasswordController.text) {
+          setState(() => _errorMessage = 'Passwords do not match');
+          return;
+        }
+        await widget.authService.resetPassword(
+          token: _tokenController.text,
+          password: _passwordController.text,
+        );
+        if (!mounted) return;
+        setState(() {
+          _successMessage = 'Password reset. You can now sign in.';
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        if (mounted) Navigator.of(context).pop();
+      }
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Reset password')),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandMark(),
+                    const SizedBox(height: 28),
+                    Text(
+                      _resetRequested
+                          ? 'Choose a new password'
+                          : 'Forgot your password?',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _resetRequested
+                          ? 'Paste the reset link or token from your email, then choose a new password.'
+                          : 'Enter your account email and we will send a reset link if it matches an account.',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (_successMessage != null) ...[
+                      _MessageBanner(
+                        message: _successMessage!,
+                        isSuccess: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_errorMessage != null) ...[
+                      _MessageBanner(message: _errorMessage!, isSuccess: false),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _emailController,
+                      validator: _validateEmail,
+                      readOnly: _resetRequested,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.mail_outline),
+                      ),
+                    ),
+                    if (_resetRequested) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _tokenController,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Paste the reset link or token from your email'
+                            : null,
+                        keyboardType: TextInputType.url,
+                        decoration: const InputDecoration(
+                          labelText: 'Reset link or token',
+                          prefixIcon: Icon(Icons.link),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        validator: _validatePassword,
+                        obscureText: true,
+                        autofillHints: const [AutofillHints.newPassword],
+                        decoration: const InputDecoration(
+                          labelText: 'New password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        validator: (value) => value != _passwordController.text
+                            ? 'Passwords do not match'
+                            : null,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Confirm new password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _resetRequested
+                                  ? 'Reset password'
+                                  : 'Send reset email',
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class EmailVerificationScreen extends StatefulWidget {
+  const EmailVerificationScreen({super.key, required this.authService});
+
+  final AuthService authService;
+
+  @override
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
+}
+
+class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _tokenController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  String? _successMessage;
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      await widget.authService.verifyEmail(token: _tokenController.text);
+      if (!mounted) return;
+      setState(() {
+        _successMessage = 'Email verified. You can now sign in.';
+      });
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Verify email')),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandMark(),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Verify your email',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Paste the verification link or token from your email.',
+                    ),
+                    const SizedBox(height: 24),
+                    if (_successMessage != null) ...[
+                      _MessageBanner(
+                        message: _successMessage!,
+                        isSuccess: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_errorMessage != null) ...[
+                      _MessageBanner(message: _errorMessage!, isSuccess: false),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _tokenController,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Paste the verification link or token from your email'
+                          : null,
+                      keyboardType: TextInputType.url,
+                      decoration: const InputDecoration(
+                        labelText: 'Verification link or token',
+                        prefixIcon: Icon(Icons.link),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Verify email'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

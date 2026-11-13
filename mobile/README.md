@@ -44,12 +44,15 @@ The backend permits registration only when the username and email are unused, th
 ## Authentication implementation
 
 - [`lib/main.dart`](./lib/main.dart) contains the app theme, sign-in/sign-up forms, client-side validation, loading and error states, the signed-in profile screen, and session restoration.
-- [`lib/auth/auth_service.dart`](./lib/auth/auth_service.dart) sends JSON requests to `/signup`, `/login`, and `/me`, turns server and connection failures into user-facing errors, and exposes the `AuthService` API.
+- [`lib/auth/auth_service.dart`](./lib/auth/auth_service.dart) sends requests to the auth endpoints for sign-up, sign-in, profile loading, email verification, and password reset; it turns server and connection failures into user-facing errors and exposes the `AuthService` API.
 - Login stores the one-hour JWT with `flutter_secure_storage`; it is never stored in preferences or logged. On app launch the client calls `/me` with the saved bearer token to restore the profile. A `401` clears an expired token. Sign-out deletes the local token because the backend does not currently have a logout endpoint.
 - Sign-up success returns the user to sign-in and reminds them to verify their email. The backend's validation and verification responses are shown in the app.
+- The sign-in screen can resend a verification email, submit a verification link/token, request a password-reset email, and reset the password with a pasted reset link/token. The app extracts the token from the email URL and submits it to the existing backend endpoints.
 - The default auth base URL can be overridden with the compile-time `API_BASE_URL` Dart define. This keeps local network addresses out of the source and lets teammates use their emulator, phone, or deployed HTTPS API.
 
 When adding an authenticated API feature, add the typed request/response behavior to `AuthService` (or a separate service for non-auth endpoints), pass bearer tokens through the service rather than UI widgets, surface backend error messages, and add tests for both successful and failing responses. Keep password/token values out of logs.
+
+Email delivery still runs through the backend SMTP configuration. Before using these flows with real users, configure SMTP and replace the backend's local verification/reset URLs with a public HTTPS URL for the deployed API or an app deep link. Until then, users can paste a copied link into the corresponding mobile screen; the app extracts its token and calls the API using `API_BASE_URL`.
 
 ## Validate changes
 

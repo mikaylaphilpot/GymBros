@@ -60,6 +60,45 @@ void main() {
       });
     });
 
+    test('calls email verification and password reset endpoints', () async {
+      final requests = <http.Request>[];
+      final service = AuthService(
+        baseUrl: 'http://localhost:5001/api/auth/',
+        tokenStore: _MemoryTokenStore(),
+        client: MockClient((request) async {
+          requests.add(request);
+          return _jsonResponse(
+            request.url.path.endsWith('/resend-verification') ? 404 : 200,
+            {'message': 'If an account exists, an email will be sent.'},
+          );
+        }),
+      );
+
+      await service.resendVerificationEmail(email: 'gymbro@example.com');
+      await service.verifyEmail(
+        token: 'https://example.com/verify?token=verification-token',
+      );
+      await service.requestPasswordReset(email: 'gymbro@example.com');
+      await service.resetPassword(
+        token: 'https://example.com/reset?token=reset-token',
+        password: 'Password1!',
+      );
+
+      expect(requests.map((request) => request.url.path), [
+        '/api/auth/resend-verification',
+        '/api/auth/verify-email',
+        '/api/auth/forgot-password',
+        '/api/auth/reset-password',
+      ]);
+      expect(jsonDecode(requests[0].body), {'email': 'gymbro@example.com'});
+      expect(requests[1].url.queryParameters, {'token': 'verification-token'});
+      expect(jsonDecode(requests[2].body), {'email': 'gymbro@example.com'});
+      expect(jsonDecode(requests[3].body), {
+        'token': 'reset-token',
+        'password': 'Password1!',
+      });
+    });
+
     test('logs in, stores the token, and loads the profile', () async {
       final tokenStore = _MemoryTokenStore();
       final requests = <http.Request>[];

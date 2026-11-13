@@ -39,6 +39,7 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
 
+    await tester.ensureVisible(find.text("Don't have an account? Sign up"));
     await tester.tap(find.text("Don't have an account? Sign up"));
     await tester.pumpAndSettle();
 
@@ -62,6 +63,7 @@ void main() {
     );
     await tester.pumpWidget(GymBrosApp(authService: service));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text("Don't have an account? Sign up"));
     await tester.tap(find.text("Don't have an account? Sign up"));
     await tester.pumpAndSettle();
 
@@ -79,5 +81,91 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Welcome back'), findsOneWidget);
+  });
+
+  testWidgets('requests and completes a password reset from the app', (
+    tester,
+  ) async {
+    final requests = <http.Request>[];
+    final service = AuthService(
+      tokenStore: _MemoryTokenStore(),
+      client: MockClient((request) async {
+        requests.add(request);
+        return http.Response(
+          jsonEncode({'message': 'Password reset was successful'}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    await tester.pumpWidget(GymBrosApp(authService: service));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Forgot password?'));
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'gymbro@example.com',
+    );
+    await tester.tap(find.text('Send reset email'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('If an account exists'), findsOneWidget);
+
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'https://example.com/reset?token=reset-token',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), 'Password1!');
+    await tester.enterText(find.byType(TextFormField).at(3), 'Password1!');
+    await tester.tap(find.widgetWithText(FilledButton, 'Reset password'));
+    await tester.pumpAndSettle();
+
+    expect(requests, hasLength(2));
+    expect(requests[0].url.path, '/api/auth/forgot-password');
+    expect(jsonDecode(requests[0].body), {'email': 'gymbro@example.com'});
+    expect(requests[1].url.path, '/api/auth/reset-password');
+    expect(jsonDecode(requests[1].body), {
+      'token': 'reset-token',
+      'password': 'Password1!',
+    });
+    expect(find.text('Welcome back'), findsOneWidget);
+  });
+
+  testWidgets('resends a verification email from sign in', (tester) async {
+    var requestPath = '';
+    final service = AuthService(
+      tokenStore: _MemoryTokenStore(),
+      client: MockClient((request) async {
+        requestPath = request.url.path;
+        return http.Response(
+          jsonEncode({
+            'message': 'If an unverified account exists, email sent.',
+          }),
+          404,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    await tester.pumpWidget(GymBrosApp(authService: service));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Resend verification email'));
+    await tester.tap(find.text('Resend verification email'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'gymbro@example.com',
+    );
+    await tester.tap(find.text('Send email'));
+    await tester.pumpAndSettle();
+
+    expect(requestPath, '/api/auth/resend-verification');
+    expect(
+      find.textContaining('If an unverified account exists'),
+      findsOneWidget,
+    );
   });
 }
