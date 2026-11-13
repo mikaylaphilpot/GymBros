@@ -78,7 +78,8 @@ function isSupportedPushOrigin(url: URL): boolean {
     url.protocol === "https:" &&
     (url.hostname === "fcm.googleapis.com" ||
       url.hostname === "updates.push.services.mozilla.com" ||
-      url.hostname.endsWith(".notify.windows.com"))
+      url.hostname.endsWith(".notify.windows.com")) ||
+      url.hostname.endsWith(".push.apple.com")
   );
 }
 

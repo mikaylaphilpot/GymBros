@@ -159,6 +159,86 @@ export function createNotificationRouter({
   const router = express.Router();
   router.use(authenticationMiddleware);
 
+
+  async function sendFriendNotification(
+    req: express.Request<{ friendId: string }>,
+    res: express.Response,
+    next: express.NextFunction,
+    kind: "bug" | "congratulate",
+  ): Promise<void> {
+    if (!req.userId) {
+      res.status(401).json({ message: "Authentication is required" });
+      return;
+    }
+
+    if (!notificationStore) {
+      res.status(503).json({ message: "In-app notifications are not configured" });
+      return;
+    }
+
+    if (
+      !mongoose.isValidObjectId(req.params.friendId) ||
+      req.params.friendId === req.userId
+    ) {
+      res.status(400).json({ message: "Invalid friend ID." });
+      return;
+    }
+
+    try {
+      const friend = await User.findById(req.params.friendId).select("_id username");
+
+      const currentUser = await User.exists({
+        _id: req.userId,
+        "friends.friendId": req.params.friendId,
+      });
+
+      if (!friend || !currentUser) {
+        res.status(404).json({ message: "Friend relationship not found." });
+        return;
+      }
+
+      if (kind === "bug") {
+        await User.updateOne(
+          { _id: req.userId, "friends.friendId": req.params.friendId },
+          {
+            $inc: { "friends.$.bugCount": 1 },
+            $set: { "friends.$.lastBuggedAt": new Date() },
+          },
+        );
+      }
+
+      const notification = await sendToAllChannels(
+        req.params.friendId,
+        {
+          title: kind === "bug" ? "Your bro is checking in!" : "Congratulations, bro!",
+          message: kind === "bug"
+            ? `${req.userId} sent you a workout reminder.`
+            : `${req.userId} congratulated you on your workout!`,
+          url: "/home-page",
+        },
+        {
+          notificationStore,
+          store,
+          deviceTokenStore,
+          nativePushSender,
+        },
+      );
+
+      res.status(201).json({ notification });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  router.post("/friends/:friendId/bug", (req, res, next) => {
+    void sendFriendNotification(req, res, next, "bug");
+  });
+
+  router.post("/friends/:friendId/congratulate", (req, res, next) => {
+    void sendFriendNotification(req, res, next, "congratulate");
+  });
+
+
   router.get("/inbox", async (req, res, next) => {
     if (!req.userId) {
       res.status(401).json({ message: "Authentication is required" });
