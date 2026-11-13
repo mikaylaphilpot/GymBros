@@ -14,7 +14,7 @@ const overlay =
 const popup =
   "flex min-h-[320px] max-h-[88dvh] w-full max-w-[340px] flex-col overflow-y-auto rounded-lg bg-white px-4 py-5 shadow-[0_4px_16px_#000]"
 const title =
-  "self-start font-['Inter:Bold'] text-[21px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
+  "self-start text-[21px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4"
 const description = "mt-2 text-left text-[13px]"
 const searchField =
   "mt-2.5 flex h-8 items-center gap-1.5 rounded-md border-2 border-[#919191] px-2"
@@ -39,8 +39,7 @@ export default function AddFriends({
   const [message, setMessage] = useState("")
   const friendIdSet = new Set(friendIds)
 
-  // We delay search requests slightly so typing a username does not spam the backend,
-  // and stale results are ignored once a newer search replaces them.
+  // AI-assisted: debounces username searches and ignores results from stale requests.
   useEffect(() => {
     let active = true
     const searchQuery = query.trim()
@@ -79,8 +78,7 @@ export default function AddFriends({
     }
   }, [currentUserId, query])
 
-  // Add the selected user through the API, then tell the parent page to reload so the
-  // friend list is updated immediately without a manual refresh.
+  // Add the selected user and refresh the parent friend list.
   async function handleAdd(user: UserSearchResult) {
     setPendingFriendId(user.id)
     setError("")
