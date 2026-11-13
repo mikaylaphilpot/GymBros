@@ -37,14 +37,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Welcome Back Bro!'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
 
-    await tester.ensureVisible(find.text("Don't have an account? Sign up"));
-    await tester.tap(find.text("Don't have an account? Sign up"));
+    await tester.ensureVisible(find.text('Not a Bro? Create Account'));
+    await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Become a Bro!'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Confirm password'), findsOneWidget);
   });
@@ -64,8 +64,8 @@ void main() {
     );
     await tester.pumpWidget(GymBrosApp(authService: service));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text("Don't have an account? Sign up"));
-    await tester.tap(find.text("Don't have an account? Sign up"));
+    await tester.ensureVisible(find.text('Not a Bro? Create Account'));
+    await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextFormField);
@@ -73,7 +73,7 @@ void main() {
     await tester.enterText(fields.at(1), 'gymbro@example.com');
     await tester.enterText(fields.at(2), 'Password1!');
     await tester.enterText(fields.at(3), 'Password1!');
-    await tester.tap(find.text('Create account'));
+    await tester.tap(find.text('Sign Up'));
     await tester.pumpAndSettle();
 
     expect(requestPath, '/api/auth/signup');
@@ -81,7 +81,7 @@ void main() {
       find.textContaining('Check your email to verify it'),
       findsOneWidget,
     );
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Welcome Back Bro!'), findsOneWidget);
   });
 
   testWidgets('requests and completes a password reset from the app', (
@@ -133,7 +133,7 @@ void main() {
       'token': 'reset-token',
       'password': 'Password1!',
     });
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Welcome Back Bro!'), findsOneWidget);
   });
 
   testWidgets('resends a verification email from sign in', (tester) async {
@@ -224,7 +224,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'gymbro');
     await tester.enterText(find.byType(TextFormField).at(1), 'Password1!');
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.text('Sign In'));
     await tester.pumpAndSettle();
 
     expect(find.text('My schedule'), findsOneWidget);

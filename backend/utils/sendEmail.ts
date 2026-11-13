@@ -19,7 +19,7 @@ async function sendEmail(
     } catch (error: unknown) {
 
         console.error('Send email error:', error);
-        throw error; 
+        throw error;
     }
 }
 

@@ -15,7 +15,9 @@ interface SignupBody {
 // Request values start as unknown because clients can send values of any shape.
 // The runtime checks in each route prove they are strings before we use them.
 interface LoginBody {
-  username: unknown;
+  identifier?: unknown;
+  email?: unknown;
+  username?: unknown;
   password: unknown;
 }
 
@@ -25,6 +27,13 @@ interface EmailBody {
 
 interface ResetPasswordBody {
   token: unknown;
+  password: unknown;
+}
+
+interface UpdateProfileBody {
+  name: unknown;
+  username: unknown;
+  currentPassword: unknown;
   password: unknown;
 }
 
@@ -44,7 +53,13 @@ function isDuplicateKeyError(error: unknown): boolean {
 // Duplicate accounts are rejected and passwords are hashed before saving.
 // A verification email is sent after the account is created.
 router.post('/signup', async (req: Request<Record<string, never>, unknown, SignupBody>, res: Response) => {
-  const { username, email, password } = req.body;
+  const body: unknown = req.body;
+  if (!isRecord(body)) {
+    res.status(400).json({ message: 'Please provide valid signup details.' });
+    return;
+  }
+
+  const { username, email, password } = body;
 
   if (
     typeof username !== 'string' || username.trim().length === 0 ||
@@ -55,11 +70,11 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
     return;
   }
 
-  // Usernames and email addresses are case-insensitive.
-  const normUsername = username.trim().toLowerCase();
-  const normEmail = email.trim().toLowerCase();
+  // Preserve email and username casing; both are case-sensitive identifiers.
+  const exactUsername = username.trim();
+  const exactEmail = email.trim();
 
-  if (!emailRegex.test(normEmail)) {
+  if (!emailRegex.test(exactEmail)) {
     res.status(400).json({ message: 'Invalid Email Format' });
     return;
   }
@@ -71,12 +86,12 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
   try {
     // Check whether the email or username already exists.
-    if (await User.findOne({ email: normEmail })) {
+    if (await User.findOne({ email: exactEmail })) {
       res.status(409).json({ message: 'Account already exists with this email' });
       return;
     }
 
-    if (await User.findOne({ username: normUsername })) {
+    if (await User.findOne({ username: exactUsername })) {
       res.status(409).json({ message: 'Username already in use' });
       return;
     }
@@ -88,15 +103,15 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
     // Hash the password before storing the new account.
     await User.create({
-      username: normUsername,
-      email: normEmail,
+      username: exactUsername,
+      email: exactEmail,
       password: hashedPassword,
       verificationToken: hashedVerificationToken,
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
     });
 
     await sendEmail(
-      normEmail,
+      exactEmail,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
@@ -118,19 +133,34 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 // POST /api/auth/login
 // Authenticates a user and returns a JWT that expires after one hour.
 router.post('/login', async (req: Request<Record<string, never>, unknown, LoginBody>, res: Response) => {
-  const { username, password } = req.body;
+  const body: unknown = req.body;
+  if (!isRecord(body)) {
+    res.status(400).json({ message: 'Please provide valid login details.' });
+    return;
+  }
+
+  const { identifier: suppliedIdentifier, email, username, password } = body;
+  const identifier = typeof suppliedIdentifier === 'string'
+    ? suppliedIdentifier
+    : typeof email === 'string'
+      ? email
+      : username;
 
   if (
-    typeof username !== 'string' || username.trim().length === 0 ||
+    typeof identifier !== 'string' || identifier.trim().length === 0 ||
     typeof password !== 'string' || password.trim().length === 0
   ) {
     res.status(400).json({ message: 'Please fill out all fields!' });
     return;
   }
 
-  // Usernames are looked up without regard to capitalization.
+  // Accept email or username, while retaining support for older API clients.
   try {
-    const existingUser = await User.findOne({ username: username.trim().toLowerCase() });
+    const exactIdentifier = identifier.trim();
+    const lookup = emailRegex.test(exactIdentifier)
+      ? { email: exactIdentifier }
+      : { username: exactIdentifier };
+    const existingUser = await User.findOne(lookup);
 
     // Compare the submitted password with its stored bcrypt hash.
     if (!existingUser || !(await bcrypt.compare(password, existingUser.password))) {
@@ -180,12 +210,100 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
 
     res.status(200).json({
       id: existingUser._id,
+      name: existingUser.name,
       username: existingUser.username,
       email: existingUser.email
     });
   } catch (error: unknown) {
     console.error('Internal error', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// PATCH /api/auth/me
+// Updates the authenticated user's name, username, and password. The current
+// password is required for every profile change.
+router.patch('/me', authMiddleware, async (
+  req: Request<Record<string, never>, unknown, UpdateProfileBody>,
+  res: Response
+) => {
+  if (!req.userId) {
+    res.status(401).json({ message: 'Token Verification Failed' });
+    return;
+  }
+
+  const { name, username, currentPassword, password } = req.body;
+
+  if (
+    typeof name !== 'string' || name.trim().length === 0 ||
+    typeof username !== 'string' || username.trim().length === 0 ||
+    typeof currentPassword !== 'string' || currentPassword.length === 0 ||
+    (password !== undefined && typeof password !== 'string')
+  ) {
+    res.status(400).json({ message: 'Name, username, and current password are required. A new password is optional.' });
+    return;
+  }
+
+  const normalizedName = name.trim();
+  const normalizedUsername = username.trim().toLowerCase();
+
+  if (normalizedName.length > 100) {
+    res.status(400).json({ message: 'Name must be 100 characters or fewer.' });
+    return;
+  }
+
+  if (typeof password === 'string' && !passwordRegex.test(password)) {
+    res.status(400).json({ message: 'Your Password does not meet requirements' });
+    return;
+  }
+
+  try {
+    const existingUser = await User.findById(req.userId);
+
+    if (!existingUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    if (!(await bcrypt.compare(currentPassword, existingUser.password))) {
+      res.status(401).json({ message: 'Current password is incorrect.' });
+      return;
+    }
+
+    const usernameOwner = await User.findOne({
+      username: normalizedUsername,
+      _id: { $ne: existingUser._id }
+    });
+
+    if (usernameOwner) {
+      res.status(409).json({ message: 'Username already in use' });
+      return;
+    }
+
+    existingUser.name = normalizedName;
+    existingUser.username = normalizedUsername;
+    if (typeof password === 'string') {
+      existingUser.password = await bcrypt.hash(password, 12);
+    }
+    await existingUser.save();
+
+    res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: {
+        id: existingUser._id,
+        name: existingUser.name,
+        username: existingUser.username,
+        email: existingUser.email
+      }
+    });
+  } catch (error: unknown) {
+    if (isDuplicateKeyError(error)) {
+      res.status(409).json({ message: 'Username already in use' });
+      return;
+    }
+
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Unable to update profile.' });
   }
 });
 
@@ -225,7 +343,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/resend-verification
-// Accepts and normalizes an email address, then rotates the token for an
+// Accepts an email address, then rotates the token for an
 // unverified account and emails the new link.
 router.post('/resend-verification', async (
   req: Request<Record<string, never>, unknown, EmailBody>,
@@ -238,11 +356,11 @@ router.post('/resend-verification', async (
     return;
   }
 
-  const normEmail = email.trim().toLowerCase();
+  const exactEmail = email.trim();
   const genericMessage = 'If an unverified account exists, a verification email will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: normEmail });
+    const existingUser = await User.findOne({ email: exactEmail });
 
     // Return the same message for an unknown or already-verified account.
     if (!existingUser || existingUser.isVerified) {
@@ -257,7 +375,7 @@ router.post('/resend-verification', async (
     await existingUser.save();
 
     await sendEmail(
-      normEmail,
+      exactEmail,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
@@ -282,12 +400,12 @@ router.post('/forgot-password', async (
     return;
   }
 
-  // Normalize email before looking up the account.
-  const normEmail = email.trim().toLowerCase();
+  // Preserve email casing when looking up the account.
+  const exactEmail = email.trim();
   const genericMessage = 'If an account exists for this email, a password reset link will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: normEmail });
+    const existingUser = await User.findOne({ email: exactEmail });
 
     if (!existingUser) {
       res.status(200).json({ message: genericMessage });
@@ -301,10 +419,10 @@ router.post('/forgot-password', async (
     await existingUser.save();
 
     // For local testing; replace this URL with the frontend reset-password page.
-    const resetLink = `http://localhost:5001/api/auth/reset-password?token=${resetToken}`;
+    const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
     await sendEmail(
-      normEmail,
-      'Forger Password Link',
+      exactEmail,
+      'Forget Password Link',
       `Click here to reset your password: ${resetLink}`
     );
 

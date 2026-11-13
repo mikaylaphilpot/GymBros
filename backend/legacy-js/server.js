@@ -1,43 +1,82 @@
 const express = require('express');
 const cors = require('cors');
-const router = require('./routes/authRoutes');
+const dotenv = require('dotenv');
+const { MongoClient } = require('mongodb');
 const { connectToMongoDB } = require('./config/db');
+const authRouter = require('./routes/authRoutes');
+const {
+  createInMemoryPushSubscriptionStore,
+  createMongoPushSubscriptionStore,
+} = require('./models/pushSubscription');
+const { createNotificationRouter } = require('./routes/notificationRoutes');
 
-// Initialize Express application
+dotenv.config();
 const app = express();
 
-// Enable CORS for frontend-backend communication
-// Parse incoming JSON request bodies
 app.use(cors());
 app.use(express.json());
 
-// GET /api/test
-// Test endpoint to verify that the backend server is running
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// Register authentication routes (signup, login, and protected user profile)
-// All auth endpoints are prefixed with /api/auth
-app.use('/api/auth', router);
+app.use('/api/auth', authRouter);
 
-// Connect to MongoDB before starting the Express server
-async function startServer() {
-  try {
-    // Establish database connection using config/db.js
-    await connectToMongoDB();
-
-    // Start listening for incoming requests on port 5001
-    app.listen(5001, () => {
-      console.log('Server running on port 5001');
-    });
-
-  } catch (error) {
-    // Log startup errors and exit if the database connection fails
-    console.error('Server error:', error);
-    process.exit(1);
-  }
+if (process.env.ALLOW_DEV_USER_HEADER === 'true') {
+  app.use((req, _res, next) => {
+    if (typeof req.headers['x-user-id'] === 'string') {
+      req.user = { id: req.headers['x-user-id'] };
+    }
+    next();
+  });
 }
 
-// Initialize the database connection and start the server
-startServer();
+function createUnavailableStore() {
+  return {
+    save: async () => {
+      const error = new Error('MongoDB is not configured');
+      error.statusCode = 503;
+      throw error;
+    },
+    findByUserId: async () => null,
+    deleteByUserId: async () => undefined,
+  };
+}
+
+async function startServer() {
+  let client;
+  let store = createInMemoryPushSubscriptionStore();
+
+  if (process.env.MONGODB_URI) {
+    await connectToMongoDB();
+    client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+    store = createMongoPushSubscriptionStore(
+      client.db(process.env.MONGODB_DB || 'gymbros'),
+    );
+  } else if (process.env.NODE_ENV === 'production') {
+    store = createUnavailableStore();
+  } else {
+    console.warn('MONGODB_URI is not configured; using in-memory push subscriptions');
+  }
+
+  app.use('/api/notifications', createNotificationRouter({ store }));
+  app.use((error, _req, res, _next) => {
+    const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    res.status(status).json({ message: error.message || 'Internal server error' });
+  });
+
+  const port = Number(process.env.PORT) || 5001;
+  return app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Failed to start server:', error.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { app, startServer };
