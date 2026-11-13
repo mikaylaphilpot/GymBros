@@ -4,20 +4,43 @@ import "../styles/homepage.css"
 type BroWorkoutWidgetProps = {
     status: string;
     name: string;
-    startTime: string //might have to chnage to time or something, bc its gonan be #:## yk?
+    startTime: string;
     endTime: string;
     activity: string;
     icon: string;
+    onClick: () => void;
+    disabled?: boolean;
 }
 
-export default function BroWorkoutWidget({status, name, startTime, endTime, activity, icon}: BroWorkoutWidgetProps) {
+//On HomePage, displays your bros' workout widgets with the appropriate colors and ability to "bug your bros"
+export default function BroWorkoutWidget({
+    status,
+    name,
+    startTime,
+    endTime,
+    activity,
+    icon,
+    onClick,
+    disabled = false
+}: BroWorkoutWidgetProps) {
     const className1: string = "bro-workout-widget";
     const combined: string = `${status} ${className1}`;
-    //prob do if statement here abt which icon to return and which color the background should be
+
     return (
         <div className={combined}>
             <p>{name}: {startTime} - {endTime}, {activity}</p>
-            <Icon src={icon} height={40} width={40} />
+
+            <button
+                type="button"
+                className="bro-workout-action"
+                onClick={onClick}
+                disabled={disabled}
+                aria-label={status === "completed"
+                    ? `Congratulate ${name}`
+                    : `Bug ${name}`}
+            >
+                <Icon src={icon} height={40} width={40} alt={status === "completed" ? "Congratulations" : "Bug"} />
+            </button>
         </div>
     );
 }

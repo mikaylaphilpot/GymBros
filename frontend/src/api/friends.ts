@@ -21,6 +21,16 @@ export interface FriendsByStats {
   mostBuggedFriend: Friend | null
 }
 
+export interface FriendWorkout extends Friend {
+  workouts: Array<{
+    scheduleId: string
+    activity: string
+    startTime: string
+    endTime: string
+    isCompletedToday: boolean
+  }>
+}
+
 export interface FriendActionResult {
   message: string
   added?: boolean
@@ -100,13 +110,48 @@ function parseFriend(value: unknown): Friend | null {
   return value
 }
 
+//Based on user ID, gets list of all of their bros' workouts to be displayed on the HomePage
+function isFriendWorkout(value: unknown): value is FriendWorkout {
+  return isFriend(value) && Array.isArray((value as FriendWorkout).workouts) &&
+    (value as FriendWorkout).workouts.every((workout) =>
+      typeof workout.scheduleId === "string" &&
+      typeof workout.activity === "string" &&
+      typeof workout.startTime === "string" &&
+      typeof workout.endTime === "string" &&
+      typeof workout.isCompletedToday === "boolean")
+}
+
+//Calls API to sort bros' workouts by day and selects only the ones occuring on the current day to be displayed
+export async function getFriendsTodayWorkouts(currentUserId: string): Promise<FriendWorkout[]> {
+  const payload = await requestJson(
+    `${usersApiUrl}/${encodeURIComponent(currentUserId)}/friends/workouts/today`,
+    { headers: getAuthHeaders() },
+  )
+  if (!Array.isArray(payload) || !payload.every(isFriendWorkout)) {
+    throw new Error("The server returned invalid friend workout data.")
+  }
+  return payload
+}
+
+//When user clicks the bug/congratulate button, calls API to send the correct browser notification to their bro
+export async function sendFriendNotification(
+  friendId: string,
+  action: "bug" | "congratulate",
+): Promise<void> {
+  await requestJson(`${apiBaseUrl}/api/notifications/friends/${encodeURIComponent(friendId)}/${action}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  })
+}
+
+//Gets signed-in user's ID to use for enabling notifications
 export async function getCurrentUserId(): Promise<string> {
   const token = getAuthToken()
   const payload = await requestJson(`${authApiUrl}/me`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 
-  // Get the account ID from the token-backed endpoint rather than trusting client input.
+  //Get the account ID from the token-backed endpoint rather than trusting client input
   if (!isRecord(payload) || typeof payload.id !== "string") {
     throw new Error("The server returned invalid account data.")
   }
@@ -119,7 +164,10 @@ export async function searchUsers(
   currentUserId: string,
 ): Promise<UserSearchResult[]> {
   const params = new URLSearchParams({ q: query, currentUserId })
-  const payload = await requestJson(`${usersApiUrl}/search?${params}`)
+  const payload = await requestJson(
+    `${usersApiUrl}/search?${params}`,
+    { headers: getAuthHeaders() }
+  )
 
   if (
     !Array.isArray(payload) ||
