@@ -41,11 +41,7 @@ const router = express.Router();
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const verificationLinkFor = (token: string): string =>
-  `${process.env.PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/verify-email?token=${token}`;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+  `${process.env.BACKEND_URL}/api/auth/verify-email?token=${token}`;
 
 // MongoDB reports duplicate unique-index values with error code 11000.
 function isDuplicateKeyError(error: unknown): boolean {

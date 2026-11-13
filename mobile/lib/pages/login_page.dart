@@ -8,12 +8,16 @@ class LoginPage extends StatefulWidget {
     required this.authService,
     required this.onLoggedIn,
     required this.onCreateAccount,
+    required this.onForgotPassword,
+    required this.onVerifyEmail,
     this.initialMessage,
   });
 
   final AuthService authService;
   final ValueChanged<AuthUser> onLoggedIn;
   final VoidCallback onCreateAccount;
+  final ValueChanged<BuildContext> onForgotPassword;
+  final ValueChanged<BuildContext> onVerifyEmail;
   final String? initialMessage;
 
   @override
@@ -27,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isSubmitting = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -68,6 +73,51 @@ class _LoginPageState extends State<LoginPage> {
   String? _required(String? value, String message) {
     if (value == null || value.trim().isEmpty) return message;
     return null;
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    var emailInput = '';
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Resend verification email'),
+        content: TextField(
+          onChanged: (value) => emailInput = value,
+          keyboardType: TextInputType.emailAddress,
+          autofillHints: const [AutofillHints.email],
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, emailInput.trim()),
+            child: const Text('Send email'),
+          ),
+        ],
+      ),
+    );
+    if (email == null || email.isEmpty || !mounted) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      await widget.authService.resendVerificationEmail(email: email);
+      if (!mounted) return;
+      setState(() {
+        _successMessage = 'If an unverified account exists for that email, a verification email will be sent.';
+      });
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -114,6 +164,25 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 34),
+                      if (_successMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2E7D32)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF2E7D32)
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            _successMessage!,
+                            style: const TextStyle(color: Color(0xFF2E7D32)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       if (_errorMessage != null) ...[
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -174,16 +243,33 @@ class _LoginPageState extends State<LoginPage> {
                         child: TextButton(
                           onPressed: _isSubmitting
                               ? null
-                              : () => ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Password recovery is not available on mobile yet.',
-                                        ),
-                                      ),
-                                    ),
+                              : () => widget.onForgotPassword(context),
                           child: const Text(
-                            'Forget Password?',
+                            'Forgot password?',
+                            style: TextStyle(color: Color(0xFF546AC0)),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: _isSubmitting
+                              ? null
+                              : _resendVerificationEmail,
+                          child: const Text(
+                            'Resend verification email',
+                            style: TextStyle(color: Color(0xFF546AC0)),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => widget.onVerifyEmail(context),
+                          child: const Text(
+                            'I have a verification link',
                             style: TextStyle(color: Color(0xFF546AC0)),
                           ),
                         ),

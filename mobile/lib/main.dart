@@ -3,9 +3,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
+import 'schedule/schedule_screen.dart';
+import 'schedule/schedule_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
-import 'pages/notifications_page.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -29,10 +30,12 @@ class GymBrosApp extends StatefulWidget {
   const GymBrosApp({
     super.key,
     required this.authService,
+    this.scheduleService,
     this.notificationService,
   });
 
   final AuthService authService;
+  final ScheduleService? scheduleService;
   final NotificationService? notificationService;
 
   @override
@@ -43,11 +46,15 @@ class _GymBrosAppState extends State<GymBrosApp> {
   AuthUser? _user;
   String? _restoreError;
   bool _isRestoring = true;
+  late final ScheduleService _scheduleService;
   bool _showSignUp = false;
 
   @override
   void initState() {
     super.initState();
+    _scheduleService =
+        widget.scheduleService ??
+        ScheduleService(tokenStore: widget.authService.tokenStore);
     _restoreSession();
   }
 
@@ -110,25 +117,24 @@ class _GymBrosAppState extends State<GymBrosApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFB6F36A),
-          brightness: Brightness.dark,
-          surface: const Color(0xFF151914),
+          seedColor: const Color(0xFFB31517),
+          brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFF10130F),
+        scaffoldBackgroundColor: const Color(0xFFE9E4DF),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1A2019),
+          fillColor: const Color(0xFFD9D9D9),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(6),
+            borderSide: const BorderSide(color: Color(0xFF9E9E9E)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFF30382D)),
+            borderRadius: BorderRadius.circular(6),
+            borderSide: const BorderSide(color: Color(0xFF9E9E9E)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFB6F36A), width: 1.5),
+            borderRadius: BorderRadius.circular(6),
+            borderSide: const BorderSide(color: Color(0xFFB31517), width: 2),
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
@@ -158,9 +164,26 @@ class _GymBrosAppState extends State<GymBrosApp> {
                     initialMessage: _restoreError,
                     onLoggedIn: _onLoggedIn,
                     onCreateAccount: _toggleSignUp,
+                    onForgotPassword: (context) =>
+                        Navigator.of(context).push<void>(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ForgotPasswordScreen(
+                              authService: widget.authService,
+                            ),
+                          ),
+                        ),
+                    onVerifyEmail: (context) =>
+                        Navigator.of(context).push<void>(
+                          MaterialPageRoute<void>(
+                            builder: (_) => EmailVerificationScreen(
+                              authService: widget.authService,
+                            ),
+                          ),
+                        ),
                   )
-          : HomeScreen(
-              user: _user!,
+          : ScheduleScreen(
+              username: _user!.username,
+              scheduleService: _scheduleService,
               onLogOut: _logOut,
               notificationService: widget.notificationService,
             ),
@@ -531,6 +554,337 @@ class _BrandMark extends StatelessWidget {
   }
 }
 
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key, required this.authService});
+
+  final AuthService authService;
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _tokenController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _resetRequested = false;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  String? _successMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _tokenController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Enter your email';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Enter your new password';
+    if (!RegExp(
+      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    ).hasMatch(value)) {
+      return 'Use 8+ characters with uppercase, lowercase, a number, and a symbol (@\$!%*?&)';
+    }
+    return null;
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      if (!_resetRequested) {
+        await widget.authService.requestPasswordReset(
+          email: _emailController.text.trim(),
+        );
+        if (!mounted) return;
+        setState(() {
+          _resetRequested = true;
+          _successMessage = 'If an account exists for that email, a password reset email will be sent. Paste the reset link or token below.';
+        });
+      } else {
+        if (_passwordController.text != _confirmPasswordController.text) {
+          setState(() => _errorMessage = 'Passwords do not match');
+          return;
+        }
+        await widget.authService.resetPassword(
+          token: _tokenController.text,
+          password: _passwordController.text,
+        );
+        if (!mounted) return;
+        setState(() {
+          _successMessage = 'Password reset. You can now sign in.';
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        if (mounted) Navigator.of(context).pop();
+      }
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Reset password')),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandMark(),
+                    const SizedBox(height: 28),
+                    Text(
+                      _resetRequested
+                          ? 'Choose a new password'
+                          : 'Forgot your password?',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _resetRequested
+                          ? 'Paste the reset link or token from your email, then choose a new password.'
+                          : 'Enter your account email and we will send a reset link if it matches an account.',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (_successMessage != null) ...[
+                      _MessageBanner(
+                        message: _successMessage!,
+                        isSuccess: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_errorMessage != null) ...[
+                      _MessageBanner(message: _errorMessage!, isSuccess: false),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _emailController,
+                      validator: _validateEmail,
+                      readOnly: _resetRequested,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.mail_outline),
+                      ),
+                    ),
+                    if (_resetRequested) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _tokenController,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Paste the reset link or token from your email'
+                            : null,
+                        keyboardType: TextInputType.url,
+                        decoration: const InputDecoration(
+                          labelText: 'Reset link or token',
+                          prefixIcon: Icon(Icons.link),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        validator: _validatePassword,
+                        obscureText: true,
+                        autofillHints: const [AutofillHints.newPassword],
+                        decoration: const InputDecoration(
+                          labelText: 'New password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        validator: (value) => value != _passwordController.text
+                            ? 'Passwords do not match'
+                            : null,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Confirm new password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _resetRequested
+                                  ? 'Reset password'
+                                  : 'Send reset email',
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class EmailVerificationScreen extends StatefulWidget {
+  const EmailVerificationScreen({super.key, required this.authService});
+
+  final AuthService authService;
+
+  @override
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
+}
+
+class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _tokenController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  String? _successMessage;
+
+  @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      await widget.authService.verifyEmail(token: _tokenController.text);
+      if (!mounted) return;
+      setState(() {
+        _successMessage = 'Email verified. You can now sign in.';
+      });
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Verify email')),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandMark(),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Verify your email',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Paste the verification link or token from your email.',
+                    ),
+                    const SizedBox(height: 24),
+                    if (_successMessage != null) ...[
+                      _MessageBanner(
+                        message: _successMessage!,
+                        isSuccess: true,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_errorMessage != null) ...[
+                      _MessageBanner(message: _errorMessage!, isSuccess: false),
+                      const SizedBox(height: 16),
+                    ],
+                    TextFormField(
+                      controller: _tokenController,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Paste the verification link or token from your email'
+                          : null,
+                      keyboardType: TextInputType.url,
+                      decoration: const InputDecoration(
+                        labelText: 'Verification link or token',
+                        prefixIcon: Icon(Icons.link),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Verify email'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageBanner extends StatelessWidget {
   const _MessageBanner({required this.message, required this.isSuccess});
 
@@ -550,77 +904,6 @@ class _MessageBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(message, style: TextStyle(color: color)),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    required this.user,
-    required this.onLogOut,
-    this.notificationService,
-  });
-
-  final AuthUser user;
-  final VoidCallback onLogOut;
-  final NotificationService? notificationService;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('GymBros'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onLogOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.fitness_center,
-                size: 52,
-                color: Color(0xFFB6F36A),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'You’re in, ${user.username}!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 24),
-              if (notificationService != null)
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          NotificationsPage(service: notificationService!),
-                    ),
-                  ),
-                  icon: const Icon(Icons.notifications),
-                  label: const Text('Notifications'),
-                ),
-              if (notificationService != null) const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: onLogOut,
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign out'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
