@@ -39,8 +39,7 @@ export default function AddFriends({
   const [message, setMessage] = useState("")
   const friendIdSet = new Set(friendIds)
 
-  // We delay search requests slightly so typing a username does not spam the backend,
-  // and stale results are ignored once a newer search replaces them.
+  // AI-assisted: debounces username searches and ignores results from stale requests.
   useEffect(() => {
     let active = true
     const searchQuery = query.trim()
@@ -79,8 +78,7 @@ export default function AddFriends({
     }
   }, [currentUserId, query])
 
-  // Add the selected user through the API, then tell the parent page to reload so the
-  // friend list is updated immediately without a manual refresh.
+  // Add the selected user and refresh the parent friend list.
   async function handleAdd(user: UserSearchResult) {
     setPendingFriendId(user.id)
     setError("")

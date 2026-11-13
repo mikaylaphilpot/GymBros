@@ -10,8 +10,7 @@ import vertMenu from "../assets/vertMenu.png"
 import { deleteFriend, getCurrentUserId, getFriendsByStats, type Friend, type FriendsByStats } from "../api/friends"
 import AddFriends from "./AddFriends"
 
-// The friends page keeps the page-level layout and card styling in one set of constants so the
-// section content remains easy to scan and consistent across the app.
+// Keep page layout and card styling together for consistent, scannable sections.
 const page = "relative min-h-dvh overflow-x-hidden font-sans"
 const background = "pointer-events-none fixed inset-0 size-full object-cover"
 const panel =
@@ -48,8 +47,7 @@ type FriendCardProps = {
   onRemove: (friend: Friend) => void
 }
 
-// Each friend row is a reusable card that can show a stat summary and expose a small
-// menu for removing the relationship without leaving the page.
+// Each friend card shows stats and a menu for removing the relationship in place.
 function FriendCard({
   friend,
   statistic,
@@ -119,8 +117,7 @@ export default function FriendsPage() {
   const [isRemoving, setIsRemoving] = useState("")
   const [error, setError] = useState("")
 
-  // Resolve the signed-in user before requesting their friend list so the page can
-  // display the correct relationship data for the active account.
+  // Load the signed-in user's friend list and report request errors.
   useEffect(() => {
     let active = true
 
@@ -156,8 +153,7 @@ export default function FriendsPage() {
     setFriends(await getFriendsByStats(currentUserId))
   }, [currentUserId])
 
-  // Combine featured and regular friends into one list so duplicate entries can be
-  // filtered out before display.
+  // Combine featured and regular friends so duplicates can be filtered out.
   const visibleFriends = useMemo(() => {
     const allFriends = friends
       ? [
@@ -178,6 +174,7 @@ export default function FriendsPage() {
     [visibleFriends],
   )
 
+  // Filter the friend sections by username while preserving their groups.
   const filteredFriends = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     const matches = (friend: Friend | null): friend is Friend =>
@@ -195,8 +192,7 @@ export default function FriendsPage() {
     }
   }, [friends, query])
 
-  // This runs only after confirmation, then refreshes grouped stats to keep every
-  // featured section and the regular list in sync.
+  // Remove confirmed friends and refresh all friend sections.
   async function handleRemove(friend: Friend) {
     if (!currentUserId) return
     setError("")
@@ -214,8 +210,7 @@ export default function FriendsPage() {
     }
   }
 
-  // A helper keeps the "featured" list layout consistent for both the streak leader and
-  // the most frequent bugger.
+  // Render the featured friend sections with a consistent layout.
   function renderFeaturedFriend(
     heading: string,
     subtitle: string,

@@ -3,8 +3,7 @@ import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
 import { signup } from "../api/auth"
 
-// The sign-up page keeps its layout and visual rules separate from the validation flow,
-// making it easier to update styling without affecting the API call behavior.
+// Keep signup styling separate from the form validation and API flow.
 const page =
   "fixed inset-0 flex min-h-dvh w-screen items-center justify-center overflow-y-auto px-3 py-4"
 const background =
@@ -25,8 +24,7 @@ export default function SignUp() {
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // The API request should only happen after the form passes several checks so we
-  // avoid sending incomplete or invalid data to the backend.
+  // Validate signup fields before sending account data to the API.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
@@ -37,7 +35,7 @@ export default function SignUp() {
     const email = String(formData.get("email") ?? "").trim()
     const password = String(formData.get("password") ?? "")
 
-    // Check the required fields and password rules before sending the signup request.
+    // Check required fields, email format, and password complexity.
     if (!username || !email || !password) {
       setError("Please fill out all fields.")
       return
@@ -58,8 +56,7 @@ export default function SignUp() {
     setIsSubmitting(true)
 
     try {
-      // Capture the backend message so the user sees a concrete success state after
-      // account creation without losing the rest of the form layout.
+      // Display the backend response after account creation.
       setMessage(await signup(username, email, password))
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to create your account.")
@@ -68,8 +65,7 @@ export default function SignUp() {
     }
   }
 
-  // Keep all sign-up inputs inside a single focused card to mirror the login screen and
-  // reduce distractions during account creation.
+  // Use one focused signup card to match the login screen.
   return (
     <main className={page}>
       <img
@@ -117,8 +113,7 @@ export default function SignUp() {
           Password
         </label>
         <div className="group relative mt-3">
-          {/* The tooltip explains the password complexity rules without cluttering the form.
-              It appears on hover/focus so new users still have visible guidance. */}
+          {/* Explain password complexity on hover or focus without cluttering the form. */}
           <input
             id="password"
             name="password"
