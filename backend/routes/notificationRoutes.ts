@@ -131,11 +131,15 @@ async function sendToAllChannels(
   }
 
   if (dependencies.nativePushSender && dependencies.deviceTokenStore) {
-    const tokens = await dependencies.deviceTokenStore.list(targetUserId);
-    const invalidTokens = await dependencies.nativePushSender.send(tokens, notification);
-    await Promise.all(
-      invalidTokens.map((token) => dependencies.deviceTokenStore?.delete(targetUserId, token)),
-    );
+    try {
+      const tokens = await dependencies.deviceTokenStore.list(targetUserId);
+      const invalidTokens = await dependencies.nativePushSender.send(tokens, notification);
+      await Promise.all(
+        invalidTokens.map((token) => dependencies.deviceTokenStore?.delete(targetUserId, token)),
+      );
+    } catch (error) {
+      console.error("Native push delivery failed:", error);
+    }
   }
 
   return created;
