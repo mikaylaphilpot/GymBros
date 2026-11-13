@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../notifications/notification_service.dart';
+import '../pages/notifications_page.dart';
 import 'schedule_service.dart';
 
 const _daysOfWeek = <String>[
@@ -18,11 +20,13 @@ class ScheduleScreen extends StatefulWidget {
     required this.username,
     required this.scheduleService,
     required this.onLogOut,
+    this.notificationService,
   });
 
   final String username;
   final ScheduleService scheduleService;
   final VoidCallback onLogOut;
+  final NotificationService? notificationService;
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -192,6 +196,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       appBar: AppBar(
         title: const Text('My schedule'),
         actions: [
+          if (widget.notificationService != null)
+            IconButton(
+              tooltip: 'Notifications',
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      NotificationsPage(service: widget.notificationService!),
+                ),
+              ),
+              icon: const Icon(Icons.notifications),
+            ),
           IconButton(
             tooltip: 'Sign out',
             onPressed: widget.onLogOut,
@@ -237,7 +252,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 Icon(
                                   Icons.event_note,
                                   size: 52,
-                                  color: Colors.white54,
+                                  color: Colors.black54,
                                 ),
                                 SizedBox(height: 16),
                                 Center(
@@ -292,8 +307,8 @@ class _ScheduleCard extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         leading: const CircleAvatar(
-          backgroundColor: Color(0xFF293324),
-          child: Icon(Icons.fitness_center, color: Color(0xFFB6F36A)),
+          backgroundColor: Color(0xFFF4DADB),
+          child: Icon(Icons.fitness_center, color: Color(0xFFB31517)),
         ),
         title: Text(
           entry.activity,
