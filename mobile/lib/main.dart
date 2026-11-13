@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
+import 'schedule/schedule_screen.dart';
+import 'schedule/schedule_service.dart';
 
 void main() {
   runApp(GymBrosApp(authService: AuthService()));
 }
 
 class GymBrosApp extends StatefulWidget {
-  const GymBrosApp({super.key, required this.authService});
+  const GymBrosApp({
+    super.key,
+    required this.authService,
+    this.scheduleService,
+  });
 
   final AuthService authService;
+  final ScheduleService? scheduleService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -19,10 +26,14 @@ class _GymBrosAppState extends State<GymBrosApp> {
   AuthUser? _user;
   String? _restoreError;
   bool _isRestoring = true;
+  late final ScheduleService _scheduleService;
 
   @override
   void initState() {
     super.initState();
+    _scheduleService =
+        widget.scheduleService ??
+        ScheduleService(tokenStore: widget.authService.tokenStore);
     _restoreSession();
   }
 
@@ -104,7 +115,11 @@ class _GymBrosAppState extends State<GymBrosApp> {
               initialMessage: _restoreError,
               onLoggedIn: _onLoggedIn,
             )
-          : HomeScreen(user: _user!, onLogOut: _logOut),
+          : ScheduleScreen(
+              username: _user!.username,
+              scheduleService: _scheduleService,
+              onLogOut: _logOut,
+            ),
     );
   }
 }
@@ -241,13 +256,13 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _resendVerificationEmail() async {
-    final controller = TextEditingController();
+    var emailInput = '';
     final email = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Resend verification email'),
         content: TextField(
-          controller: controller,
+          onChanged: (value) => emailInput = value,
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           decoration: const InputDecoration(labelText: 'Email'),
@@ -258,13 +273,12 @@ class _AuthScreenState extends State<AuthScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, emailInput.trim()),
             child: const Text('Send email'),
           ),
         ],
       ),
     );
-    controller.dispose();
     if (email == null || email.isEmpty || !mounted) return;
 
     setState(() {
@@ -842,59 +856,6 @@ class _MessageBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(message, style: TextStyle(color: color)),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.user, required this.onLogOut});
-
-  final AuthUser user;
-  final VoidCallback onLogOut;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('GymBros'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onLogOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.fitness_center,
-                size: 52,
-                color: Color(0xFFB6F36A),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'You’re in, ${user.username}!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: onLogOut,
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign out'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

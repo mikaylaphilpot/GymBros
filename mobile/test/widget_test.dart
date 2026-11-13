@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/auth/auth_service.dart';
 import 'package:mobile/main.dart';
+import 'package:mobile/schedule/schedule_service.dart';
 
 class _MemoryTokenStore implements TokenStore {
   String? token;
@@ -118,6 +119,9 @@ void main() {
     );
     await tester.enterText(find.byType(TextFormField).at(2), 'Password1!');
     await tester.enterText(find.byType(TextFormField).at(3), 'Password1!');
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Reset password'),
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Reset password'));
     await tester.pumpAndSettle();
 
@@ -161,11 +165,70 @@ void main() {
     );
     await tester.tap(find.text('Send email'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.textContaining('If an unverified account exists'),
+    );
 
     expect(requestPath, '/api/auth/resend-verification');
     expect(
       find.textContaining('If an unverified account exists'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('shows the signed-in workout schedule', (tester) async {
+    final tokenStore = _MemoryTokenStore();
+    final authService = AuthService(
+      tokenStore: tokenStore,
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/login')) {
+          return http.Response(
+            jsonEncode({'token': 'signed.jwt.token'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response(
+          jsonEncode({
+            'id': 'user-id',
+            'username': 'gymbro',
+            'email': 'gymbro@example.com',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    final scheduleService = ScheduleService(
+      tokenStore: tokenStore,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode([
+            {
+              '_id': 'schedule-id',
+              'dayOfWeek': 'Monday',
+              'startTime': '6:00 PM',
+              'endTime': '7:00 PM',
+              'activity': 'Strength training',
+              'isCompletedToday': false,
+            },
+          ]),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      GymBrosApp(authService: authService, scheduleService: scheduleService),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'gymbro');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Password1!');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My schedule'), findsOneWidget);
+    expect(find.text('Strength training'), findsOneWidget);
+    expect(find.textContaining('Monday'), findsOneWidget);
   });
 }

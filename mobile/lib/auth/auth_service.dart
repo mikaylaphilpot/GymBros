@@ -78,6 +78,8 @@ class AuthService {
   final TokenStore _tokenStore;
   final Uri _baseUri;
 
+  TokenStore get tokenStore => _tokenStore;
+
   static Uri _withTrailingSlash(String value) {
     final uri = Uri.parse(value);
     return uri.path.endsWith('/') ? uri : uri.replace(path: '${uri.path}/');
