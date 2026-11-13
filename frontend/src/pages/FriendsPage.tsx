@@ -31,6 +31,14 @@ const menuButton =
   "rounded-full p-1.5 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-[#b31517]"
 const menuAction =
   "w-full whitespace-nowrap px-3 py-1.5 text-left text-xs text-[#b31517] hover:bg-red-50 disabled:opacity-50"
+const confirmOverlay =
+  "fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-2"
+const confirmPopup =
+  "flex w-full max-w-[340px] flex-col items-center rounded-lg bg-white px-5 py-5 text-center shadow-[0_4px_16px_#000]"
+const confirmButton =
+  "rounded-md bg-[#b31517] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#951214] disabled:cursor-not-allowed disabled:opacity-50"
+const cancelButton =
+  "rounded-md border border-gray-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
 
 type FriendCardProps = {
   friend: Friend
@@ -103,6 +111,8 @@ function FriendCard({
 export default function FriendsPage() {
   const [query, setQuery] = useState("")
   const [showAdd, setShowAdd] = useState(false)
+  // Keep the selected friend pending until the user confirms or cancels removal.
+  const [friendToRemove, setFriendToRemove] = useState<Friend | null>(null)
   const [currentUserId, setCurrentUserId] = useState("")
   const [friends, setFriends] = useState<FriendsByStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -185,8 +195,8 @@ export default function FriendsPage() {
     }
   }, [friends, query])
 
-  // Removing a friend updates the backend and then refreshes the grouped stats so the
-  // featured sections and regular list stay in sync.
+  // This runs only after confirmation, then refreshes grouped stats to keep every
+  // featured section and the regular list in sync.
   async function handleRemove(friend: Friend) {
     if (!currentUserId) return
     setError("")
@@ -196,6 +206,7 @@ export default function FriendsPage() {
       // Reload the list after removal so featured-friend sections stay up to date.
       await deleteFriend(currentUserId, friend.friendId)
       await refreshFriends()
+      setFriendToRemove(null)
     } catch (removeError) {
       setError(removeError instanceof Error ? removeError.message : "Unable to remove friend.")
     } finally {
@@ -226,7 +237,10 @@ export default function FriendsPage() {
                   statistic={statistic(friend)}
                   achievementIcon={achievementIcon}
                   isRemoving={isRemoving === friend.friendId}
-                  onRemove={(selectedFriend) => void handleRemove(selectedFriend)}
+                  onRemove={(selectedFriend) => {
+                    setError("")
+                    setFriendToRemove(selectedFriend)
+                  }}
                 />
               </ul>
             )
@@ -250,7 +264,10 @@ export default function FriendsPage() {
                     friend={friend}
                     statistic={`${friend.streakCount} day streak · ${friend.bugCount} bugs`}
                     isRemoving={isRemoving === friend.friendId}
-                    onRemove={(selectedFriend) => void handleRemove(selectedFriend)}
+                    onRemove={(selectedFriend) => {
+                      setError("")
+                      setFriendToRemove(selectedFriend)
+                    }}
                   />
                 ))}
               </ul>
@@ -296,7 +313,9 @@ export default function FriendsPage() {
           </button>
         </div>
         <h1 className={title}>Your Bros</h1>
-        {error && <p role="alert" className="mt-4 text-left text-red-700">{error}</p>}
+        {error && !friendToRemove && (
+          <p role="alert" className="mt-4 text-left text-red-700">{error}</p>
+        )}
         {isLoading
           ? <p className="mt-9 text-left text-gray-700">Loading your bros...</p>
           : !currentUserId
@@ -335,6 +354,46 @@ export default function FriendsPage() {
           onAdded={refreshFriends}
           onClose={() => setShowAdd(false)}
         />
+      )}
+      {friendToRemove && (
+        <div
+          className={confirmOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-friend-title"
+          aria-describedby="remove-friend-description"
+        >
+          <div className={confirmPopup}>
+            <h2 id="remove-friend-title" className="text-lg font-bold">
+              Remove {friendToRemove.username}?
+            </h2>
+            <p id="remove-friend-description" className="mt-2 text-sm">
+              Are you sure you want to remove this friend?
+            </p>
+            {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                className={cancelButton}
+                disabled={isRemoving === friendToRemove.friendId}
+                onClick={() => {
+                  setFriendToRemove(null)
+                  setError("")
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={confirmButton}
+                disabled={isRemoving === friendToRemove.friendId}
+                onClick={() => void handleRemove(friendToRemove)}
+              >
+                {isRemoving === friendToRemove.friendId ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )
