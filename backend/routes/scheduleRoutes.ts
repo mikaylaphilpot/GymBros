@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import mongoose from 'mongoose';
 import Schedule from '../models/Schedule';
+import User from '../models/User';
 import authMiddleware from '../middleware/authMiddleware';
 
 // Body properties are unknown because a request can contain any JSON value.
@@ -66,6 +67,55 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 
+});
+
+// GET /api/schedules/friends/today
+// Return today's schedules for friends of the authenticated user.
+router.get('/friends/today', async (req, res) => {
+    if (!req.userId) {
+        res.status(401).json({ message: 'Token Verification Failed' });
+        return;
+    }
+
+    try {
+        const currentUser = await User.findById(req.userId).select('friends').lean();
+        if (!currentUser) {
+            res.status(404).json({ message: 'Current user was not found.' });
+            return;
+        }
+
+        const friendIds = currentUser.friends
+            .map((friend) => friend.friendId)
+            .filter((friendId) => mongoose.isValidObjectId(friendId));
+        const friends = await User.find({ _id: { $in: friendIds } })
+            .select('_id username')
+            .lean();
+        const today = new Intl.DateTimeFormat('en-US', {
+            weekday: 'long',
+            timeZone: 'UTC'
+        }).format(new Date());
+        const schedules = await Schedule.find({
+            userId: { $in: friendIds },
+            dayOfWeek: today
+        }).lean();
+
+        res.status(200).json(friends.map((friend) => ({
+            friendId: friend._id.toString(),
+            username: friend.username,
+            workouts: schedules
+                .filter((schedule) => schedule.userId.toString() === friend._id.toString())
+                .map((schedule) => ({
+                    id: schedule._id.toString(),
+                    startTime: schedule.startTime,
+                    endTime: schedule.endTime,
+                    activity: schedule.activity,
+                    isCompletedToday: schedule.isCompletedToday
+                }))
+        })));
+    } catch (error: unknown) {
+        console.error('Get friends today schedules error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 // POST /api/schedules
