@@ -1,19 +1,17 @@
-html,
-body,
-#root {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    min-height: 100%;
-}
-
 body {
     background-image: url(../assets/Background.png);
-    background-repeat: repeat;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+
+    font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Content Container */
+
 .white-container {
-    margin: 0;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -23,6 +21,7 @@ body {
     padding: 30px 60px;
 
     min-height: 100vh;
+    width: 600px;
     box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
     background-color: white;
 
@@ -45,8 +44,8 @@ body {
     gap: 15px;
     padding: 30px 60px;
 
-    min-height: 50vh;
-    width: 50vw;
+    min-height: 450px;
+    width: 440px;
     box-shadow: 0px 4px 25px 0px rgb(0, 0, 0);
     background-color: white;
     border-radius: 20px;
@@ -54,25 +53,27 @@ body {
     container-type: inline-size; 
 }
 
+/* Headers and No-Gap Groups */
+
 .header {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 50px;
-    margin-bottom: 10px;
 
     color: #000000;
 }
 
 .header h1 {
-    font-size: 55px;
+    font-size: 45px;
+    margin-bottom: 18px;
 }
 
 .header h2 {
-    font-size: 40px;
+    font-size: 30px;
     text-decoration-line: underline;
     text-decoration-style: solid;
-    text-decoration-thickness: 6px;
+    text-decoration-thickness: 4px;
     text-decoration-color: #B31517;
     text-underline-offset: 5px;
 }
@@ -100,21 +101,17 @@ p {
     display: flex;
     flex-direction: row;
     gap: 15px;
-
-}
-
-.profile-no-gap-group img {
-    height: 50px;
-    width: 50px;
+    margin-bottom: 10px;
 }
 
 .line-divider{
     background-color: #B31517;
-    height: 8px;
+    height: 4px;
     border: 0;
     margin: 0;
-  
 }
+
+/* Home Page Styling */
 
 .bros-schedule-box, .user-schedule-box {
     display: flex;
@@ -123,10 +120,10 @@ p {
 }
 
 .general-text, .profile-information-box p {
-    font-size: 34px;
+    font-size: 20px;
     color: #000000;
-    padding: 10px 0px 20px 0px;
-    line-height: 35px;
+    padding-bottom: 10px;
+    line-height: 25px;
 }
 
 .bro-workout-widget, .user-workout-widget {
@@ -134,19 +131,19 @@ p {
     flex-direction: row;
     align-items: center;
 
-    font-size: 28px; 
+    font-size: 20px; 
     font-weight: bold;
-    line-height: 35px;
+    line-height: 25px;
     color: #000000;
     
     border-style: solid;
     border-radius: 20px;
     border-color: #B31517;
-    border-width: 6px;
+    border-width: 2px;
     padding: 15px;
 }
 
-.bro-workout-widget .iconImage, .user-workout-widget .iconImage, .checkbox-label {
+.user-workout-widget .iconImage, .checkbox-label {
     margin-left: auto;  
 }
 
@@ -168,6 +165,8 @@ p {
     padding-bottom: 100px;
 }
 
+/* Workout Widget Colors */
+
 .overdue {
     background-color: #FF9294;
 }
@@ -179,6 +178,23 @@ p {
 
 .default {
     background-color: #FFFFFF;
+}
+
+/* Buttons and Icons */
+
+.bro-workout-action {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.bro-workout-action:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 .buttons {
@@ -195,7 +211,7 @@ p {
     margin: 30px auto 90px auto;
     padding: 15px;
     width: 180px;
-    height: 30px;
+    height: 55px;
     text-decoration: none;
     text-align: center;
 
@@ -218,6 +234,7 @@ p {
     vertical-align: middle;
 }
 
+/* Profile Page Styling */
 
 .profile-schedule-box, .profile-information-box {
     margin-top: 60px;
@@ -228,8 +245,39 @@ p {
 }
 
 .profile-schedule-widgets, .profile-information-box p, .edit-profile-box{
-    font-size: 25px;
+    font-size: 20px;
 }
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.notification-button {
+    background-color: white;
+    color: #B31517;
+    border: 2px solid #B31517;
+    border-radius: 20px;
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.notification-button:hover:not(:disabled) {
+    background-color: #B31517;
+    color: white;
+}
+
+.notification-button:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
+/* Edit Profile Page Styling */
 
 .edit-profile-box {
     display: flex;
@@ -240,21 +288,20 @@ p {
 }
 
 .edit-profile-box-item input {
-    font-size: 25px;
+    font-size: 20px;
     padding: 10px;
     background-color: #D9D9D9;
     border-style: none;
-    
+    width: 94cqw;
 }
 
 .schedule-checkboxes {
     display: flex;
     flex-direction: row;
-    gap: 40px;
+    gap: 10px;
     margin: 30px auto;
 
-
-    font-size: 25px;
+    font-size: 16px;
 }
 
 .schedule-item-header, .schedule-item-box {
@@ -270,20 +317,31 @@ p {
 .schedule-item-box {
     gap: 20px;
     font-size: 20px;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
 .schedule-item-box input {
     padding: 10px;
-    font-size: 20px;
     border-style: none;
     background-color: #D9D9D9;
-    width: 30cqw;
+    width: 29cqw;
 }
 
 .schedule-item {
     display: flex;
     flex-direction: column;
 }
+
+.delete-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    padding-top: 20px;
+}
+
+/* Forgot Password Page Styling */
 
 .forget-password-box {
     display: flex;
@@ -296,15 +354,52 @@ p {
     font-size: 20px;
     border-style: none;
     background-color: #D9D9D9;
-    width: 90cqw;
-    height: 40px;
+    width: 100%;
+    height: 55px;
 }
 
 .pswd-page-routing {
     display: flex;
     flex-direction: column;
     align-items: center;
-    
-    margin: 30px auto 0px auto;
-    text-decoration: none;
+}
+
+.pswd-page-routing .normal-button {
+    margin: 30px 0 15px 0;
+}
+
+.pswd-page-routing a {
+    text-decoration-line: underline;
+    text-decoration-style: solid;
+    text-decoration-color: #546ac0;
+    color: #546ac0;
+}
+
+.condensed-white-container h1 {
+    font-size: 40px;
+    margin-bottom: 0;
+}
+
+.condensed-white-container .general-text {
+    font-size: 20px;
+    padding: 10px 0px;
+}
+
+/* Message Text Styling */
+
+.password-message, .error-message {
+    text-align: center;
+    font-weight: bold;
+}
+
+.password-message, .completed-text {
+    color: #61B315;
+}
+
+.error-message {
+    color: #B31517;
+}
+
+.message-text {
+    font-style: italic;
 }

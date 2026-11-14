@@ -4,17 +4,20 @@ import {
   subscribeToPushNotifications,
 } from "../utils/pushNotifications"
 
+
+//Temporary test page designed to test signing user IDs up for browser notifications.
 export default function NotificationTestPage() {
   const [userId, setUserId] = useState("")
   const [status, setStatus] = useState("")
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [isSending, setIsSending] = useState(false)
 
+  //Subscribes user to notifications
   async function handleSubscribe() {
     setStatus("")
     setIsSubscribing(true)
     try {
-      await subscribeToPushNotifications(userId)
+      await subscribeToPushNotifications()
       setStatus("Notifications enabled. You can now send a test notification.")
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Subscription failed")
@@ -23,11 +26,12 @@ export default function NotificationTestPage() {
     }
   }
 
+  //After enabling notifications, sends test notification to your browser
   async function handleSendTest() {
     setStatus("")
     setIsSending(true)
     try {
-      await sendTestNotification(userId)
+      await sendTestNotification()
       setStatus("Test notification sent.")
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sending failed")
@@ -36,6 +40,7 @@ export default function NotificationTestPage() {
     }
   }
 
+  //Type in your user's ID, enable notifications, then send a test one to ensure browser permissions aren't blocking them
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 px-6">
       <h1 className="text-3xl font-bold">GymBros notification test</h1>

@@ -41,6 +41,30 @@ const daysOfWeek: readonly DayOfWeek[] = [
 ] as const;
 const timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM)$/i;
 
+function getTodayDateKey(): string {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayName(): DayOfWeek {
+  const days: DayOfWeek[] = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  return days[new Date().getDay()];
+}
+
 // This type guard confirms the day is one of the model's allowed values.
 function isDayOfWeek(day: unknown): day is DayOfWeek {
     return typeof day === 'string' && daysOfWeek.some((validDay) => validDay === day);
@@ -69,51 +93,33 @@ router.get('/', async (req, res) => {
 
 });
 
-// GET /api/schedules/friends/today
-// Return today's schedules for friends of the authenticated user.
-router.get('/friends/today', async (req, res) => {
+// GET /api/schedules/today
+// Return the authenticated user's workouts for the current day.
+router.get('/today', async (req, res) => {
     if (!req.userId) {
         res.status(401).json({ message: 'Token Verification Failed' });
         return;
     }
 
     try {
-        const currentUser = await User.findById(req.userId).select('friends').lean();
-        if (!currentUser) {
-            res.status(404).json({ message: 'Current user was not found.' });
-            return;
-        }
+        const today = getTodayDateKey();
+        const entries = await Schedule.find({
+            userId: req.userId,
+            dayOfWeek: getTodayName()
+        });
 
-        const friendIds = currentUser.friends
-            .map((friend) => friend.friendId)
-            .filter((friendId) => mongoose.isValidObjectId(friendId));
-        const friends = await User.find({ _id: { $in: friendIds } })
-            .select('_id username')
-            .lean();
-        const today = new Intl.DateTimeFormat('en-US', {
-            weekday: 'long',
-            timeZone: 'UTC'
-        }).format(new Date());
-        const schedules = await Schedule.find({
-            userId: { $in: friendIds },
-            dayOfWeek: today
-        }).lean();
+        const normalizedEntries = entries.map((entry) => {
+            const isCompletedToday = entry.completedDate === today;
+            if (entry.isCompletedToday !== isCompletedToday) {
+                entry.isCompletedToday = isCompletedToday;
+                void entry.save();
+            }
+            return entry;
+        });
 
-        res.status(200).json(friends.map((friend) => ({
-            friendId: friend._id.toString(),
-            username: friend.username,
-            workouts: schedules
-                .filter((schedule) => schedule.userId.toString() === friend._id.toString())
-                .map((schedule) => ({
-                    id: schedule._id.toString(),
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    activity: schedule.activity,
-                    isCompletedToday: schedule.isCompletedToday
-                }))
-        })));
+        res.status(200).json(normalizedEntries);
     } catch (error: unknown) {
-        console.error('Get friends today schedules error:', error);
+        console.error('Get today schedule error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
@@ -155,7 +161,8 @@ router.post('/', async (
             dayOfWeek,
             startTime: startTime.trim(),
             endTime: endTime.trim(),
-            activity: activity.trim()
+            activity: activity.trim(),
+            completedDate: null
         });
 
         res.status(201).json(entry);
@@ -165,6 +172,49 @@ router.post('/', async (
         console.error('Create schedule error:', error);
         res.status(500).json({ message: 'Internal server error' });
 
+    }
+});
+
+// PATCH /api/schedules/:id/completion
+// Mark one of today's workouts complete or incomplete.
+router.patch('/:id/completion', async (
+    req: Request<{ id: string }, unknown, { isCompletedToday?: unknown }>,
+    res: Response
+) => {
+    if (!req.userId) {
+        res.status(401).json({ message: 'Token Verification Failed' });
+        return;
+    }
+
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(400).json({ message: 'Invalid schedule ID' });
+        return;
+    }
+
+    if (typeof req.body.isCompletedToday !== 'boolean') {
+        res.status(400).json({ message: 'isCompletedToday must be a boolean' });
+        return;
+    }
+
+    try {
+        const entry = await Schedule.findOne({
+            _id: req.params.id,
+            userId: req.userId,
+            dayOfWeek: getTodayName()
+        });
+
+        if (!entry) {
+            res.status(404).json({ message: 'Today schedule entry not found' });
+            return;
+        }
+
+        entry.isCompletedToday = req.body.isCompletedToday;
+        entry.completedDate = req.body.isCompletedToday ? getTodayDateKey() : null;
+        await entry.save();
+        res.status(200).json(entry);
+    } catch (error: unknown) {
+        console.error('Update schedule completion error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

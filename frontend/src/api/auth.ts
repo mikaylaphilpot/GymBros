@@ -63,3 +63,115 @@ export async function signup(
   const result = await postAuth("signup", { username, email, password })
   return result.message ?? "Account created. Check your email to verify it."
 }
+
+//sends user email to backend for verification and to send reset password link
+export async function forgotPassword(email: string): Promise<string> {
+    const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to send reset email.");
+    }
+
+    return data.message;
+}
+
+//Takes new user password, verifies token, and updates their password in the DB
+export async function resetPassword(token: string, password: string): Promise<string> {
+    const response = await fetch(`${apiBaseUrl}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message ?? "Unable to reset password.");
+    }
+
+    return data.message;
+}
+
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+//Pulls logged-in user's information from DB
+export async function getCurrentUser(): Promise<UserProfile> {
+  const token = sessionStorage.getItem("authToken");
+
+  if (!token) {
+    throw new Error("You must be logged in to view your profile.");
+  }
+
+  const response = await fetch(`${authApiUrl}/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to load profile.");
+  }
+
+  return data as UserProfile;
+}
+
+//After user edits their information and clicks save button, updates user's info across the site and in DB
+export async function updateCurrentUser(
+  name: string,
+  username: string,
+  currentPassword: string,
+  newPassword?: string,
+): Promise<string> {
+  const token = sessionStorage.getItem("authToken");
+
+  if (!token) {
+    throw new Error("You must be logged in to update your profile.");
+  }
+
+  const body: Record<string, string> = {
+    name,
+    username,
+    currentPassword,
+  };
+
+  if (newPassword) {
+    body.password = newPassword;
+  }
+
+  const response = await fetch(`${authApiUrl}/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to update profile.");
+  }
+
+  return data.message ?? "Profile updated successfully.";
+}
+
