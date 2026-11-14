@@ -41,7 +41,11 @@ const router = express.Router();
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const verificationLinkFor = (token: string): string =>
-  `${process.env.BACKEND_URL}/api/auth/verify-email?token=${token}`;
+  `${process.env.PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/verify-email?token=${token}`;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 // MongoDB reports duplicate unique-index values with error code 11000.
 function isDuplicateKeyError(error: unknown): boolean {
@@ -70,11 +74,11 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
     return;
   }
 
-  // Preserve email and username casing; both are case-sensitive identifiers.
-  const exactUsername = username.trim();
-  const exactEmail = email.trim();
+  // Store normalized identifiers so lookups are case-insensitive.
+  const normalizedUsername = username.trim().toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  if (!emailRegex.test(exactEmail)) {
+  if (!emailRegex.test(normalizedEmail)) {
     res.status(400).json({ message: 'Invalid Email Format' });
     return;
   }
@@ -86,12 +90,12 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
   try {
     // Check whether the email or username already exists.
-    if (await User.findOne({ email: exactEmail })) {
+    if (await User.findOne({ email: normalizedEmail })) {
       res.status(409).json({ message: 'Account already exists with this email' });
       return;
     }
 
-    if (await User.findOne({ username: exactUsername })) {
+    if (await User.findOne({ username: normalizedUsername })) {
       res.status(409).json({ message: 'Username already in use' });
       return;
     }
@@ -103,15 +107,15 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
     // Hash the password before storing the new account.
     await User.create({
-      username: exactUsername,
-      email: exactEmail,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
       verificationToken: hashedVerificationToken,
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
     });
 
     await sendEmail(
-      exactEmail,
+      normalizedEmail,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
@@ -156,10 +160,10 @@ router.post('/login', async (req: Request<Record<string, never>, unknown, LoginB
 
   // Accept email or username, while retaining support for older API clients.
   try {
-    const exactIdentifier = identifier.trim();
-    const lookup = emailRegex.test(exactIdentifier)
-      ? { email: exactIdentifier }
-      : { username: exactIdentifier };
+    const normalizedIdentifier = identifier.trim().toLowerCase();
+    const lookup = emailRegex.test(normalizedIdentifier)
+      ? { email: normalizedIdentifier }
+      : { username: normalizedIdentifier };
     const existingUser = await User.findOne(lookup);
 
     // Compare the submitted password with its stored bcrypt hash.
@@ -356,11 +360,11 @@ router.post('/resend-verification', async (
     return;
   }
 
-  const exactEmail = email.trim();
+  const normalizedEmail = email.trim().toLowerCase();
   const genericMessage = 'If an unverified account exists, a verification email will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: exactEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     // Return the same message for an unknown or already-verified account.
     if (!existingUser || existingUser.isVerified) {
@@ -375,7 +379,7 @@ router.post('/resend-verification', async (
     await existingUser.save();
 
     await sendEmail(
-      exactEmail,
+      normalizedEmail,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
@@ -400,12 +404,11 @@ router.post('/forgot-password', async (
     return;
   }
 
-  // Preserve email casing when looking up the account.
-  const exactEmail = email.trim();
+  const normalizedEmail = email.trim().toLowerCase();
   const genericMessage = 'If an account exists for this email, a password reset link will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: exactEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (!existingUser) {
       res.status(200).json({ message: genericMessage });
@@ -421,7 +424,7 @@ router.post('/forgot-password', async (
     // For local testing; replace this URL with the frontend reset-password page.
     const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
     await sendEmail(
-      exactEmail,
+      normalizedEmail,
       'Forget Password Link',
       `Click here to reset your password: ${resetLink}`
     );

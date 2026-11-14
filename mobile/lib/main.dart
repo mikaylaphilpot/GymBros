@@ -1,3 +1,4 @@
+// Bootstraps Firebase and routes between authentication and the signed-in app.
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -200,6 +201,8 @@ class _LoadingScreen extends StatelessWidget {
   }
 }
 
+// Flutter sign-up counterpart to the existing web flow; validates fields before
+// sending account details through AuthService.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
     super.key,

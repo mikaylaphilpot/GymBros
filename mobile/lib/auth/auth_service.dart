@@ -1,3 +1,5 @@
+// Sends authentication requests, validates server responses, and persists the
+// session token in secure storage.
 import 'dart:async';
 import 'dart:convert';
 

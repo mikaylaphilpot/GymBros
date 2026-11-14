@@ -1,3 +1,4 @@
+// Displays the weekly workout schedule and coordinates edits with its service.
 import 'package:flutter/material.dart';
 
 import '../notifications/notification_service.dart';

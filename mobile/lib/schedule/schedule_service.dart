@@ -1,3 +1,4 @@
+// Wraps schedule API operations and converts server data into validated entries.
 import 'dart:async';
 import 'dart:convert';
 
