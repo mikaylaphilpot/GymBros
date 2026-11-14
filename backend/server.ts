@@ -15,9 +15,25 @@ import userRoutes from "./routes/userRoutes.js"
 // Initialize Express application
 const app = express()
 
+// Allow browser clients, including SwaggerHub's Try it out interface, to call
+// the API while keeping credentialed requests off the wildcard origin.
+const allowedCorsOrigins = new Set([
+  "https://app.swaggerhub.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://cop4431-jonathonf.online",
+])
+
 // Enable CORS for frontend-backend communication
 // Parse incoming JSON request bodies
-app.use(cors())
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      callback(null, !origin || allowedCorsOrigins.has(origin))
+    },
+  }),
+)
 app.use(express.json())
 
 // GET /api/test

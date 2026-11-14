@@ -7,7 +7,6 @@ import 'auth/auth_service.dart';
 import 'friends/friends_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
-import 'pages/notifications_page.dart';
 import 'schedules/schedule_service.dart';
 import 'screens/app_screens.dart';
 
@@ -170,7 +169,6 @@ class _GymBrosAppState extends State<GymBrosApp> {
           : HomeScreen(
               user: _user!,
               onLogOut: _logOut,
-              notificationService: widget.notificationService,
               authService: widget.authService,
               scheduleService: widget.scheduleService,
               friendsService: widget.friendsService,

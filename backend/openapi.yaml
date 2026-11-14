@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: GymBros API
+  version: 1.0.0
+  description: API demonstration for the GymBros MERN project.
+servers:
+  - url: http://137.184.142.16:5001
+    description: DigitalOcean deployment
+tags:
+  - name: Health
+  - name: Authentication
+  - name: Schedules
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: Username or email address.
+          example: user1
+        password:
+          type: string
+          format: password
+          example: Password1!
+    Schedule:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 507f1f77bcf86cd799439011
+        dayOfWeek:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+        startTime:
+          type: string
+          example: 6:00 AM
+        endTime:
+          type: string
+          example: 7:00 AM
+        activity:
+          type: string
+          example: Chest and triceps
+paths:
+  /api/test:
+    get:
+      tags: [Health]
+      summary: Test API connection
+      description: Public endpoint confirming that the backend is running.
+      responses:
+        "200":
+          description: Backend is working.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: Backend is working!
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in
+      description: Returns a JWT for a verified account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+        "400":
+          description: Invalid login input.
+        "401":
+          description: Invalid credentials or unverified account.
+  /api/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get the current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user's public profile.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: User not found.
+  /api/schedules:
+    get:
+      tags: [Schedules]
+      summary: Get the current user's schedule
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User's schedule entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Schedule"
+        "401":
+          description: Missing or invalid JWT.

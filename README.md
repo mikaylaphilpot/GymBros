@@ -88,6 +88,31 @@ Errors:
 - 401: Missing, invalid, or expired JWT
 - 404: User not found
 
+## SwaggerHub API demonstration
+
+The backend permits SwaggerHub's **Try it out** requests from
+`https://app.swaggerhub.com` and supports credentialed requests. The
+OpenAPI document used to create the SwaggerHub API is
+[`backend/openapi.yaml`](./backend/openapi.yaml).
+
+Use the deployed server URL `http://137.184.142.16:5001` while HTTPS and the
+domain reverse proxy are still pending. The recommended demonstration flow is:
+
+1. Run `GET /api/test` to show the public health endpoint.
+2. Run `POST /api/auth/login` with a verified account and copy the returned
+   JWT.
+3. Click **Authorize** in SwaggerHub and enter `Bearer <JWT>`.
+4. Run `GET /api/schedules` to show the authenticated user's schedule.
+
+The active route is `/api/schedules`; `/api/schedules/me` is not an implemented
+route. The deployed process must be rebuilt and restarted after source changes:
+
+```powershell
+Push-Location backend
+npm run build
+npm start
+```
+
 ### Upcoming Features
 - Email verification
 - Password reset
