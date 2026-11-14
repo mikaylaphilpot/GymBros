@@ -35,20 +35,31 @@ class AuthUser {
     required this.id,
     required this.username,
     required this.email,
+    this.name = '',
   });
 
   final String id;
   final String username;
   final String email;
+  final String name;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final username = json['username'];
     final email = json['email'];
+    final name = json['name'];
     if (id is! String || username is! String || email is! String) {
       throw const AuthException('The server returned an invalid user profile.');
     }
-    return AuthUser(id: id, username: username, email: email);
+    if (name != null && name is! String) {
+      throw const AuthException('The server returned an invalid user profile.');
+    }
+    return AuthUser(
+      id: id,
+      username: username,
+      email: email,
+      name: name as String? ?? '',
+    );
   }
 }
 
@@ -132,6 +143,37 @@ class AuthService {
   }
 
   Future<void> logOut() => _deleteToken();
+
+  Future<AuthUser> updateProfile({
+    required String name,
+    required String username,
+    required String currentPassword,
+    String? newPassword,
+  }) async {
+    final token = await _readToken();
+    if (token == null || token.isEmpty) {
+      throw const AuthException('Authentication is required.');
+    }
+
+    final response = await _request(
+      'me',
+      method: 'PATCH',
+      headers: {'Authorization': 'Bearer $token'},
+      body: {
+        'name': name,
+        'username': username,
+        'currentPassword': currentPassword,
+        if (newPassword != null && newPassword.isNotEmpty)
+          'password': newPassword,
+      },
+      expectedStatus: 200,
+    );
+    final user = response['user'];
+    if (user is! Map<String, dynamic>) {
+      throw const AuthException('The server returned an invalid user profile.');
+    }
+    return AuthUser.fromJson(user);
+  }
 
   Future<String?> _readToken() => _secureStorageOperation(_tokenStore.read);
 
