@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import mongoose from 'mongoose';
 import Schedule from '../models/Schedule';
+import User from '../models/User';
 import authMiddleware from '../middleware/authMiddleware';
 
 // Body properties are unknown because a request can contain any JSON value.

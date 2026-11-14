@@ -1,11 +1,15 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
+import 'friends/friends_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
 import 'pages/notifications_page.dart';
+import 'schedules/schedule_service.dart';
+import 'screens/app_screens.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -30,10 +34,14 @@ class GymBrosApp extends StatefulWidget {
     super.key,
     required this.authService,
     this.notificationService,
+    this.scheduleService,
+    this.friendsService,
   });
 
   final AuthService authService;
   final NotificationService? notificationService;
+  final ScheduleService? scheduleService;
+  final FriendsService? friendsService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -163,6 +171,9 @@ class _GymBrosAppState extends State<GymBrosApp> {
               user: _user!,
               onLogOut: _logOut,
               notificationService: widget.notificationService,
+              authService: widget.authService,
+              scheduleService: widget.scheduleService,
+              friendsService: widget.friendsService,
             ),
     );
   }
@@ -550,77 +561,6 @@ class _MessageBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(message, style: TextStyle(color: color)),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    required this.user,
-    required this.onLogOut,
-    this.notificationService,
-  });
-
-  final AuthUser user;
-  final VoidCallback onLogOut;
-  final NotificationService? notificationService;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('GymBros'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onLogOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.fitness_center,
-                size: 52,
-                color: Color(0xFFB6F36A),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'You’re in, ${user.username}!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(user.email, style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 24),
-              if (notificationService != null)
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          NotificationsPage(service: notificationService!),
-                    ),
-                  ),
-                  icon: const Icon(Icons.notifications),
-                  label: const Text('Notifications'),
-                ),
-              if (notificationService != null) const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: onLogOut,
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign out'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
