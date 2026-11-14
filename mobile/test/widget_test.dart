@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/auth/auth_service.dart';
+import 'package:mobile/friends/friends_service.dart';
 import 'package:mobile/main.dart';
+import 'package:mobile/schedules/schedule_service.dart';
+import 'package:mobile/screens/app_screens.dart';
 
 class _MemoryTokenStore implements TokenStore {
   String? token;
@@ -24,6 +27,27 @@ class _MemoryTokenStore implements TokenStore {
     token = value;
   }
 }
+
+ScheduleService _emptyScheduleService(TokenStore tokenStore) => ScheduleService(
+  tokenStore: tokenStore,
+  baseUrl: 'http://localhost:5001/api/auth/',
+  client: MockClient((_) async => http.Response('[]', 200)),
+);
+
+FriendsService _emptyFriendsService(TokenStore tokenStore) => FriendsService(
+  tokenStore: tokenStore,
+  baseUrl: 'http://localhost:5001/api/auth/',
+  client: MockClient(
+    (_) async => http.Response(
+      jsonEncode({
+        'otherFriends': [],
+        'highestStreakFriend': null,
+        'mostBuggedFriend': null,
+      }),
+      200,
+    ),
+  ),
+);
 
 void main() {
   testWidgets('shows sign in and opens the sign-up form', (tester) async {
@@ -85,8 +109,9 @@ void main() {
   testWidgets('signed-in users can open the translated profile page', (
     tester,
   ) async {
+    final tokenStore = _MemoryTokenStore();
     final authService = AuthService(
-      tokenStore: _MemoryTokenStore(),
+      tokenStore: tokenStore,
       client: MockClient((request) async {
         if (request.url.path.endsWith('/login')) {
           return http.Response(jsonEncode({'token': 'signed.jwt.token'}), 200);
@@ -94,6 +119,7 @@ void main() {
         return http.Response(
           jsonEncode({
             'id': 'user-id',
+            'name': 'Gym Bro',
             'username': 'gymbro',
             'email': 'gymbro@example.com',
           }),
@@ -101,17 +127,351 @@ void main() {
         );
       }),
     );
-    await tester.pumpWidget(GymBrosApp(authService: authService));
+    await tester.pumpWidget(
+      GymBrosApp(
+        authService: authService,
+        scheduleService: _emptyScheduleService(tokenStore),
+        friendsService: _emptyFriendsService(tokenStore),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'gymbro');
     await tester.enterText(find.byType(TextFormField).at(1), 'Password1!');
-    await tester.tap(find.text('Sign in'));
+    await tester.tap(find.text('Sign In'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tuesday: 12:00pm - 1:00pm, Swim'), findsOneWidget);
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
 
     expect(find.text('Workout Schedule'), findsOneWidget);
+    expect(find.text('No workouts scheduled yet.'), findsOneWidget);
+  });
+
+  testWidgets('search results show friend status and add searched users', (
+    tester,
+  ) async {
+    final requests = <http.Request>[];
+    final tokenStore = _MemoryTokenStore()..token = 'test-token';
+    final friendsService = FriendsService(
+      tokenStore: tokenStore,
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.url.path.endsWith('/friends/stats')) {
+          return http.Response(
+            jsonEncode({
+              'otherFriends': [
+                {
+                  'friendId': 'existing-friend',
+                  'username': 'AlreadyBro',
+                  'streakCount': 0,
+                  'bugCount': 0,
+                  'lastBuggedAt': null,
+                },
+              ],
+              'highestStreakFriend': {
+                'friendId': 'streak-friend',
+                'username': 'StreakBro',
+                'streakCount': 7,
+                'bugCount': 1,
+                'lastBuggedAt': null,
+              },
+              'mostBuggedFriend': {
+                'friendId': 'bugged-friend',
+                'username': 'BestBro',
+                'streakCount': 2,
+                'bugCount': 5,
+                'lastBuggedAt': null,
+              },
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/search')) {
+          return http.Response(
+            jsonEncode([
+              {
+                '_id': 'existing-friend',
+                'username': 'AlreadyBro',
+                'email': 'already@example.com',
+                'isVerified': true,
+              },
+              {
+                '_id': 'new-friend',
+                'username': 'NewBro',
+                'email': 'new@example.com',
+                'isVerified': true,
+              },
+            ]),
+            200,
+          );
+        }
+        if (request.method == 'POST') {
+          return http.Response(
+            jsonEncode({
+              'added': true,
+              'message': 'Friend added successfully.',
+            }),
+            201,
+          );
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          user: const AuthUser(
+            id: 'current-user',
+            username: 'CurrentBro',
+            email: 'current@example.com',
+          ),
+          onLogOut: () {},
+          friendsService: friendsService,
+          scheduleService: _emptyScheduleService(tokenStore),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(NavigationDestination).at(1));
+    await tester.pumpAndSettle();
+    expect(find.text('Add Bros'), findsOneWidget);
+    expect(find.text('Best Bro'), findsOneWidget);
+    expect(find.text('BestBro'), findsOneWidget);
+    expect(find.text('Streak Bro'), findsOneWidget);
+    expect(find.text('StreakBro'), findsOneWidget);
+    expect(find.text('Regular Bros'), findsOneWidget);
+    expect(find.text('AlreadyBro'), findsOneWidget);
+    final searchField = find.byType(TextField).first;
+    for (final query in ['B', 'Br', 'Bro']) {
+      await tester.enterText(searchField, query);
+      await tester.pumpAndSettle();
+    }
+
+    final searchQueries = requests
+        .where((request) => request.url.path.endsWith('/search'))
+        .map((request) => request.url.queryParameters['q'])
+        .toList();
+    expect(searchQueries, ['B', 'Br', 'Bro']);
+    expect(find.text('AlreadyBro'), findsOneWidget);
+    expect(find.text('NewBro'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'POST' &&
+            request.url.path.endsWith('/users/current-user/friends/new-friend'),
+      ),
+      isTrue,
+    );
+    expect(find.byIcon(Icons.add), findsNothing);
+    expect(find.byIcon(Icons.check), findsNWidgets(2));
+  });
+
+  testWidgets('deletes a friend from the overflow menu', (tester) async {
+    final requests = <http.Request>[];
+    final tokenStore = _MemoryTokenStore()..token = 'test-token';
+    var friendDeleted = false;
+    final friendsService = FriendsService(
+      tokenStore: tokenStore,
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.url.path.endsWith('/friends/stats')) {
+          return http.Response(
+            jsonEncode({
+              'otherFriends': [],
+              'highestStreakFriend': null,
+              'mostBuggedFriend': friendDeleted
+                  ? null
+                  : {
+                      'friendId': 'best-friend',
+                      'username': 'BestBro',
+                      'streakCount': 2,
+                      'bugCount': 5,
+                      'lastBuggedAt': null,
+                    },
+            }),
+            200,
+          );
+        }
+        if (request.method == 'DELETE') {
+          friendDeleted = true;
+          return http.Response(
+            jsonEncode({'deleted': true, 'message': 'Friend deleted.'}),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          user: const AuthUser(
+            id: 'current-user',
+            username: 'CurrentBro',
+            email: 'current@example.com',
+          ),
+          onLogOut: () {},
+          friendsService: friendsService,
+          scheduleService: _emptyScheduleService(tokenStore),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(NavigationDestination).at(1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('BestBro'), findsOneWidget);
+    await tester.tap(find.byTooltip('Bro options').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete Bro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'DELETE' &&
+            request.url.path.endsWith(
+              '/users/current-user/friends/best-friend',
+            ),
+      ),
+      isTrue,
+    );
+    expect(find.text('BestBro'), findsNothing);
+    expect(find.text('No best bro yet.'), findsOneWidget);
+  });
+
+  testWidgets('profile loads and saves current profile and schedule data', (
+    tester,
+  ) async {
+    final tokenStore = _MemoryTokenStore()..token = 'test-token';
+    final profileRequests = <http.Request>[];
+    final scheduleRequests = <http.Request>[];
+    final today = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ][DateTime.now().weekday - 1];
+    var activity = 'Tennis';
+
+    final authService = AuthService(
+      tokenStore: tokenStore,
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        profileRequests.add(request);
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'message': 'Profile updated successfully.',
+            'user': {
+              'id': 'current-user',
+              'name': body['name'],
+              'username': body['username'],
+              'email': 'current@example.com',
+            },
+          }),
+          200,
+        );
+      }),
+    );
+    final scheduleService = ScheduleService(
+      tokenStore: tokenStore,
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        scheduleRequests.add(request);
+        if (request.method == 'GET') {
+          return http.Response(
+            jsonEncode([
+              {
+                '_id': 'schedule-id',
+                'dayOfWeek': today,
+                'startTime': '9:00 AM',
+                'endTime': '10:00 AM',
+                'activity': activity,
+              },
+            ]),
+            200,
+          );
+        }
+        if (request.method == 'PATCH') {
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          activity = body['activity'] as String;
+          return http.Response(
+            jsonEncode({'_id': 'schedule-id', ...body}),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          user: const AuthUser(
+            id: 'current-user',
+            name: 'John Gymborough',
+            username: 'Jymbro20',
+            email: 'current@example.com',
+          ),
+          onLogOut: () {},
+          friendsService: FriendsService(
+            tokenStore: tokenStore,
+            baseUrl: 'http://localhost:5001/api/auth/',
+            client: MockClient((_) async => http.Response('{}', 404)),
+          ),
+          authService: authService,
+          scheduleService: scheduleService,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('9:00 AM - 10:00 AM, Tennis'), findsOneWidget);
+    await tester.tap(find.byType(NavigationDestination).at(2));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Name: John Gymborough'), findsOneWidget);
+    expect(find.text('$today: 9:00 AM - 10:00 AM, Tennis'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Edit').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(2), 'Swimming');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      scheduleRequests.any(
+        (request) =>
+            request.method == 'PATCH' &&
+            request.url.path.endsWith('/schedules/schedule-id'),
+      ),
+      isTrue,
+    );
+    expect(find.text('$today: 9:00 AM - 10:00 AM, Swimming'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('User Information'));
+    await tester.tap(find.widgetWithText(TextButton, 'Edit').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Jane Gymbro');
+    await tester.enterText(find.byType(TextFormField).at(2), 'Password1!');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(profileRequests.single.url.path, '/api/auth/me');
+    expect(profileRequests.single.method, 'PATCH');
+    expect(find.text('Name: Jane Gymbro'), findsOneWidget);
   });
 }
