@@ -4,9 +4,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
+import 'friends/friends_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
 import 'pages/notifications_page.dart';
+import 'schedules/schedule_service.dart';
+import 'screens/app_screens.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -31,10 +34,14 @@ class GymBrosApp extends StatefulWidget {
     super.key,
     required this.authService,
     this.notificationService,
+    this.scheduleService,
+    this.friendsService,
   });
 
   final AuthService authService;
   final NotificationService? notificationService;
+  final ScheduleService? scheduleService;
+  final FriendsService? friendsService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -164,6 +171,9 @@ class _GymBrosAppState extends State<GymBrosApp> {
               user: _user!,
               onLogOut: _logOut,
               notificationService: widget.notificationService,
+              authService: widget.authService,
+              scheduleService: widget.scheduleService,
+              friendsService: widget.friendsService,
             ),
     );
   }
@@ -554,7 +564,6 @@ class _MessageBanner extends StatelessWidget {
     );
   }
 }
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
