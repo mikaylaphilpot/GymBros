@@ -68,9 +68,6 @@ export default function Login() {
         className={form}
       >
         <h1 className={title}>Welcome Back Bro!</h1>
-        <p className="mb-4 text-center text-sm font-semibold text-[#B31517]!">
-          Email, username, and password are case-sensitive.*
-        </p>
 
         {error && <p role="alert" aria-live="polite" className="mb-4 text-center text-[#B31517]!">{error}</p>}
 

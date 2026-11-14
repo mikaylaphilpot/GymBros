@@ -24,8 +24,8 @@ const searchInput =
 const addButton =
   "rounded-lg border border-[#ccc] bg-[#b31517] px-3 py-1.5 text-sm text-white hover:bg-[#951214]"
 const title =
-  "mt-5 block text-left text-[30px]! leading-tight font-bold underline decoration-[#B31517] decoration-[12.5%] underline-offset-4 sm:text-[34px]!"
-const sectionTitle = "text-left text-lg leading-none"
+  "mt-5 block text-left text-[30px]! leading-tight font-bold text-black underline decoration-[#B31517] decoration-[12.5%] underline-offset-4 sm:text-[34px]!"
+const sectionTitle = "text-left text-lg leading-none text-black"
 const menuButton =
   "rounded-full p-1.5 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-[#b31517]"
 const menuAction =
@@ -67,7 +67,7 @@ function FriendCard({
           className="size-6 shrink-0 object-contain"
         />
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold">{friend.username}</p>
+          <p className="truncate text-[15px] font-semibold text-black">{friend.username}</p>
           <p className="text-xs text-gray-700">{statistic}</p>
         </div>
       </div>
@@ -359,7 +359,7 @@ export default function FriendsPage() {
           aria-describedby="remove-friend-description"
         >
           <div className={confirmPopup}>
-            <h2 id="remove-friend-title" className="text-lg font-bold">
+            <h2 id="remove-friend-title" className="text-lg font-bold text-black">
               Remove {friendToRemove.username}?
             </h2>
             <p id="remove-friend-description" className="mt-2 text-sm">

@@ -47,6 +47,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// Preserve the entered casing for display while treating both identifiers as case-insensitive.
+function caseInsensitiveExact(value: string): RegExp {
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${escaped}$`, 'i');
+}
+
 // MongoDB reports duplicate unique-index values with error code 11000.
 function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
@@ -74,7 +80,7 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
     return;
   }
 
-  // Preserve email and username casing; both are case-sensitive identifiers.
+  // Preserve the entered casing for display while treating both identifiers as case-insensitive.
   const exactUsername = username.trim();
   const exactEmail = email.trim();
 
@@ -90,12 +96,12 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
   try {
     // Check whether the email or username already exists.
-    if (await User.findOne({ email: exactEmail })) {
+    if (await User.findOne({ email: caseInsensitiveExact(exactEmail) })) {
       res.status(409).json({ message: 'Account already exists with this email' });
       return;
     }
 
-    if (await User.findOne({ username: exactUsername })) {
+    if (await User.findOne({ username: caseInsensitiveExact(exactUsername) })) {
       res.status(409).json({ message: 'Username already in use' });
       return;
     }
@@ -160,10 +166,10 @@ router.post('/login', async (req: Request<Record<string, never>, unknown, LoginB
 
   // Accept email or username, while retaining support for older API clients.
   try {
-    const exactIdentifier = identifier.trim();
-    const lookup = emailRegex.test(exactIdentifier)
-      ? { email: exactIdentifier }
-      : { username: exactIdentifier };
+    const normalizedIdentifier = identifier.trim();
+    const lookup = emailRegex.test(normalizedIdentifier)
+      ? { email: caseInsensitiveExact(normalizedIdentifier) }
+      : { username: caseInsensitiveExact(normalizedIdentifier) };
     const existingUser = await User.findOne(lookup);
 
     // Compare the submitted password with its stored bcrypt hash.
@@ -275,7 +281,7 @@ router.patch('/me', authMiddleware, async (
     }
 
     const usernameOwner = await User.findOne({
-      username: normalizedUsername,
+      username: caseInsensitiveExact(normalizedUsername),
       _id: { $ne: existingUser._id }
     });
 
@@ -360,11 +366,11 @@ router.post('/resend-verification', async (
     return;
   }
 
-  const exactEmail = email.trim();
+  const normalizedEmail = email.trim();
   const genericMessage = 'If an unverified account exists, a verification email will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: exactEmail });
+    const existingUser = await User.findOne({ email: caseInsensitiveExact(normalizedEmail) });
 
     // Return the same message for an unknown or already-verified account.
     if (!existingUser || existingUser.isVerified) {
@@ -379,7 +385,7 @@ router.post('/resend-verification', async (
     await existingUser.save();
 
     await sendEmail(
-      exactEmail,
+      existingUser.email,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
@@ -404,12 +410,11 @@ router.post('/forgot-password', async (
     return;
   }
 
-  // Preserve email casing when looking up the account.
-  const exactEmail = email.trim();
+  const normalizedEmail = email.trim();
   const genericMessage = 'If an account exists for this email, a password reset link will be sent.';
 
   try {
-    const existingUser = await User.findOne({ email: exactEmail });
+    const existingUser = await User.findOne({ email: caseInsensitiveExact(normalizedEmail) });
 
     if (!existingUser) {
       res.status(200).json({ message: genericMessage });
@@ -425,7 +430,7 @@ router.post('/forgot-password', async (
     // For local testing; replace this URL with the frontend reset-password page.
     const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
     await sendEmail(
-      exactEmail,
+      existingUser.email,
       'Forget Password Link',
       `Click here to reset your password: ${resetLink}`
     );
