@@ -41,9 +41,10 @@ flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/a
 
 The backend permits registration only when the username and email are unused, the email is valid, and the password has at least 8 characters including an uppercase letter, lowercase letter, number, and one of `@$!%*?&`. It emails a verification link after registration. Sign-in is rejected until the user follows that link.
 
-## Authentication implementation
+## App screens
 
 - [`lib/main.dart`](./lib/main.dart) contains the app theme, sign-in/sign-up forms, client-side validation, loading and error states, the signed-in profile screen, and session restoration.
+- [`lib/screens/app_screens.dart`](./lib/screens/app_screens.dart) translates the existing Home, Bros, Profile, Edit Profile, Edit Schedule, and Forgot Password frontend pages into Flutter screens. Their controls are UI-only, matching the existing frontend; no new API behavior is added.
 - [`lib/auth/auth_service.dart`](./lib/auth/auth_service.dart) sends requests to the auth endpoints for sign-up, sign-in, profile loading, email verification, and password reset; it turns server and connection failures into user-facing errors and exposes the `AuthService` API.
 - Login stores the one-hour JWT with `flutter_secure_storage`; it is never stored in preferences or logged. On app launch the client calls `/me` with the saved bearer token to restore the profile. A `401` clears an expired token. Sign-out deletes the local token because the backend does not currently have a logout endpoint.
 - Sign-up success returns the user to sign-in and reminds them to verify their email. The backend's validation and verification responses are shown in the app.
@@ -112,4 +113,5 @@ flutter test
 flutter build apk --debug
 ```
 
+Authentication service request/response tests are in [`test/auth_service_test.dart`](./test/auth_service_test.dart); screen interaction tests are in [`test/widget_test.dart`](./test/widget_test.dart).
 Service request/response tests are in [`test/auth_service_test.dart`](./test/auth_service_test.dart) and [`test/schedule_service_test.dart`](./test/schedule_service_test.dart); auth screen interaction tests are in [`test/widget_test.dart`](./test/widget_test.dart).

@@ -1,3 +1,4 @@
+// AI-assisted: Initial Implementation suggested by Copilot
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -159,6 +160,48 @@ void main() {
         ),
       );
     });
+
+    test(
+      'updates the authenticated profile using the backend payload',
+      () async {
+        final tokenStore = _MemoryTokenStore()..token = 'signed.jwt.token';
+        late http.Request received;
+        final service = AuthService(
+          baseUrl: 'http://localhost:5001/api/auth/',
+          tokenStore: tokenStore,
+          client: MockClient((request) async {
+            received = request;
+            return _jsonResponse(200, {
+              'message': 'Profile updated successfully.',
+              'user': {
+                'id': 'user-id',
+                'name': 'New Name',
+                'username': 'newname',
+                'email': 'newname@example.com',
+              },
+            });
+          }),
+        );
+
+        final user = await service.updateProfile(
+          name: 'New Name',
+          username: 'newname',
+          currentPassword: 'Password1!',
+        );
+
+        expect(received.method, 'PATCH');
+        expect(received.url.path, '/api/auth/me');
+        expect(received.headers['Authorization'], 'Bearer signed.jwt.token');
+        expect(jsonDecode(received.body), {
+          'name': 'New Name',
+          'username': 'newname',
+          'currentPassword': 'Password1!',
+        });
+        expect(user.name, 'New Name');
+        expect(user.username, 'newname');
+        expect(user.email, 'newname@example.com');
+      },
+    );
 
     test('clears an expired session token', () async {
       final tokenStore = _MemoryTokenStore()..token = 'expired.token';

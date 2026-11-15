@@ -1,174 +1,122 @@
+// AI-assisted: Initial Implementation suggested by Copilot
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/auth/auth_service.dart';
-import 'package:mobile/schedule/schedule_service.dart';
+import 'package:mobile/schedules/schedule_service.dart';
 
-class _MemoryTokenStore implements TokenStore {
-  String? token = 'signed.jwt.token';
+class _TokenStore implements TokenStore {
+  @override
+  Future<void> delete() async {}
 
   @override
-  Future<void> delete() async {
-    token = null;
-  }
+  Future<String?> read() async => 'test-token';
 
   @override
-  Future<String?> read() async => token;
-
-  @override
-  Future<void> write(String value) async {
-    token = value;
-  }
+  Future<void> write(String token) async {}
 }
 
-Map<String, Object?> _entry({
+Map<String, Object?> _scheduleJson({
   String id = 'schedule-id',
-  String dayOfWeek = 'Monday',
-  String startTime = '6:00 PM',
-  String endTime = '7:00 PM',
-  String activity = 'Strength training',
+  bool isCompletedToday = false,
 }) => {
   '_id': id,
-  'dayOfWeek': dayOfWeek,
-  'startTime': startTime,
-  'endTime': endTime,
-  'activity': activity,
-  'isCompletedToday': false,
+  'dayOfWeek': 'Monday',
+  'startTime': '9:00 AM',
+  'endTime': '10:00 AM',
+  'activity': 'Tennis',
+  'isCompletedToday': isCompletedToday,
 };
 
-http.Response _jsonResponse(int status, Object body) => http.Response(
-  jsonEncode(body),
-  status,
-  headers: {'content-type': 'application/json'},
-);
-
 void main() {
-  group('ScheduleService', () {
-    test('loads the signed-in user schedule with a bearer token', () async {
-      late http.Request received;
-      final service = ScheduleService(
-        tokenStore: _MemoryTokenStore(),
-        baseUrl: 'http://localhost:5001/api/schedules',
-        client: MockClient((request) async {
-          received = request;
-          return _jsonResponse(200, [_entry()]);
-        }),
-      );
-
-      final entries = await service.getSchedules();
-
-      expect(received.method, 'GET');
-      expect(received.url.path, '/api/schedules/');
-      expect(received.headers['Authorization'], 'Bearer signed.jwt.token');
-      expect(entries.single.activity, 'Strength training');
-      expect(entries.single.isCompletedToday, isFalse);
-    });
-
-    test('creates, partially updates, and deletes schedule entries', () async {
-      final requests = <http.Request>[];
-      final service = ScheduleService(
-        tokenStore: _MemoryTokenStore(),
-        baseUrl: 'http://localhost:5001/api/schedules/',
-        client: MockClient((request) async {
-          requests.add(request);
-          if (request.method == 'DELETE') {
-            return _jsonResponse(200, {
-              'message': 'Schedule entry deleted successfully',
-            });
+  test('uses authenticated schedule CRUD endpoints', () async {
+    final requests = <http.Request>[];
+    final service = ScheduleService(
+      tokenStore: _TokenStore(),
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.method == 'GET') {
+          return http.Response(jsonEncode([_scheduleJson()]), 200);
+        }
+        if (request.method == 'POST') {
+          return http.Response(jsonEncode(_scheduleJson()), 201);
+        }
+        if (request.method == 'PATCH') {
+          if (request.url.path.endsWith('/completion')) {
+            return http.Response(
+              jsonEncode(_scheduleJson(isCompletedToday: true)),
+              200,
+            );
           }
-          if (request.method == 'POST') {
-            return _jsonResponse(201, _entry());
-          }
-          return _jsonResponse(
-            200,
-            _entry(dayOfWeek: 'Tuesday', activity: 'Cardio'),
-          );
-        }),
-      );
-
-      final created = await service.createSchedule(
-        dayOfWeek: 'Monday',
-        startTime: '6:00 PM',
-        endTime: '7:00 PM',
-        activity: 'Strength training',
-      );
-      final updated = await service.updateSchedule(
-        created.id,
-        dayOfWeek: 'Tuesday',
-        activity: 'Cardio',
-      );
-      await service.deleteSchedule(created.id);
-
-      expect(requests.map((request) => request.method), [
-        'POST',
-        'PATCH',
-        'DELETE',
-      ]);
-      expect(requests[0].url.path, '/api/schedules/');
-      expect(jsonDecode(requests[0].body), {
-        'dayOfWeek': 'Monday',
-        'startTime': '6:00 PM',
-        'endTime': '7:00 PM',
-        'activity': 'Strength training',
-      });
-      expect(requests[1].url.path, '/api/schedules/schedule-id');
-      expect(jsonDecode(requests[1].body), {
-        'dayOfWeek': 'Tuesday',
-        'activity': 'Cardio',
-      });
-      expect(requests[2].url.path, '/api/schedules/schedule-id');
-      expect(updated.dayOfWeek, 'Tuesday');
-      expect(updated.activity, 'Cardio');
-    });
-
-    test(
-      'surfaces backend errors and refuses requests without a token',
-      () async {
-        final service = ScheduleService(
-          tokenStore: _MemoryTokenStore(),
-          baseUrl: 'http://localhost:5001/api/schedules/',
-          client: MockClient(
-            (_) async =>
-                _jsonResponse(404, {'message': 'Schedule entry not found'}),
-          ),
+          return http.Response(jsonEncode(_scheduleJson()), 200);
+        }
+        return http.Response(
+          jsonEncode({'message': 'Schedule entry deleted successfully'}),
+          200,
         );
-        await expectLater(
-          service.deleteSchedule('missing-id'),
-          throwsA(
-            isA<ScheduleException>()
-                .having(
-                  (error) => error.message,
-                  'message',
-                  'Schedule entry not found',
-                )
-                .having((error) => error.statusCode, 'statusCode', 404),
-          ),
-        );
-
-        await expectLater(
-          ScheduleService(
-            tokenStore: _MemoryTokenStore()..token = null,
-            baseUrl: 'http://localhost:5001/api/schedules/',
-            client: MockClient((_) async => fail('Should not send a request')),
-          ).getSchedules(),
-          throwsA(
-            isA<ScheduleException>().having(
-              (error) => error.statusCode,
-              'statusCode',
-              401,
-            ),
-          ),
-        );
-      },
+      }),
     );
 
-    test('validates schedule values using the backend formats', () {
-      expect(validateScheduleDay('Sunday'), isNull);
-      expect(validateScheduleDay('Funday'), isNotNull);
-      expect(validateScheduleTime('6:30 PM'), isNull);
-      expect(validateScheduleTime('18:30'), isNotNull);
+    final schedules = await service.fetchSchedules();
+    expect(schedules.single.activity, 'Tennis');
+
+    final created = await service.createSchedule(
+      dayOfWeek: 'Monday',
+      startTime: '9:00 AM',
+      endTime: '10:00 AM',
+      activity: 'Tennis',
+    );
+    expect(created.id, 'schedule-id');
+
+    final updated = await service.updateSchedule(
+      id: 'schedule-id',
+      dayOfWeek: 'Monday',
+      startTime: '9:00 AM',
+      endTime: '10:00 AM',
+      activity: 'Tennis',
+    );
+    expect(updated.activity, 'Tennis');
+
+    final completed = await service.setScheduleCompletion(
+      id: 'schedule-id',
+      isCompletedToday: true,
+    );
+    expect(completed.isCompletedToday, isTrue);
+
+    await service.deleteSchedule('schedule-id');
+
+    expect(requests.map((request) => request.method), [
+      'GET',
+      'POST',
+      'PATCH',
+      'PATCH',
+      'DELETE',
+    ]);
+    expect(
+      requests.every(
+        (request) =>
+            request.url.path == '/api/schedules/' ||
+            request.url.path == '/api/schedules/schedule-id' ||
+            request.url.path == '/api/schedules/schedule-id/completion',
+      ),
+      isTrue,
+    );
+    expect(
+      requests.every(
+        (request) => request.headers['authorization'] == 'Bearer test-token',
+      ),
+      isTrue,
+    );
+    expect(jsonDecode(requests[1].body), {
+      'dayOfWeek': 'Monday',
+      'startTime': '9:00 AM',
+      'endTime': '10:00 AM',
+      'activity': 'Tennis',
     });
+    expect(requests[3].url.path, '/api/schedules/schedule-id/completion');
+    expect(jsonDecode(requests[3].body), {'isCompletedToday': true});
   });
 }

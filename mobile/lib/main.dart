@@ -1,13 +1,14 @@
-// Bootstraps Firebase and routes between authentication and the signed-in app.
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'auth/auth_service.dart';
-import 'schedule/schedule_screen.dart';
-import 'schedule/schedule_service.dart';
+import 'friends/friends_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
+import 'schedules/schedule_service.dart';
+import 'screens/app_screens.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -33,11 +34,13 @@ class GymBrosApp extends StatefulWidget {
     required this.authService,
     this.scheduleService,
     this.notificationService,
+    this.friendsService,
   });
 
   final AuthService authService;
   final ScheduleService? scheduleService;
   final NotificationService? notificationService;
+  final FriendsService? friendsService;
 
   @override
   State<GymBrosApp> createState() => _GymBrosAppState();
@@ -182,11 +185,12 @@ class _GymBrosAppState extends State<GymBrosApp> {
                           ),
                         ),
                   )
-          : ScheduleScreen(
-              username: _user!.username,
-              scheduleService: _scheduleService,
+            : HomeScreen(
+              user: _user!,
               onLogOut: _logOut,
-              notificationService: widget.notificationService,
+              authService: widget.authService,
+              scheduleService: _scheduleService,
+              friendsService: widget.friendsService,
             ),
     );
   }
