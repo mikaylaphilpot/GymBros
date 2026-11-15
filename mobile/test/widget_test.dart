@@ -272,6 +272,8 @@ void main() {
   ) async {
     final requests = <http.Request>[];
     final tokenStore = _MemoryTokenStore()..token = 'test-token';
+    var friendAdded = false;
+    var friendDeleted = false;
     final friendsService = FriendsService(
       tokenStore: tokenStore,
       baseUrl: 'http://localhost:5001/api/auth/',
@@ -281,13 +283,34 @@ void main() {
           return http.Response(
             jsonEncode({
               'otherFriends': [
-                {
-                  'friendId': 'existing-friend',
-                  'username': 'AlreadyBro',
-                  'streakCount': 0,
-                  'bugCount': 0,
-                  'lastBuggedAt': null,
-                },
+                if (!friendDeleted)
+                  {
+                    'friendId': 'existing-friend',
+                    'username': 'AlreadyBro',
+                    'streakCount': 0,
+                    'bugCount': 0,
+                    'lastBuggedAt': null,
+                  },
+                for (final friend in [
+                  ('friend-two', 'BroTwo'),
+                  ('friend-three', 'BroThree'),
+                  ('friend-four', 'BroFour'),
+                ])
+                  {
+                    'friendId': friend.$1,
+                    'username': friend.$2,
+                    'streakCount': 4,
+                    'bugCount': 2,
+                    'lastBuggedAt': null,
+                  },
+                if (friendAdded)
+                  {
+                    'friendId': 'new-friend',
+                    'username': 'NewBro',
+                    'streakCount': 1,
+                    'bugCount': 0,
+                    'lastBuggedAt': null,
+                  },
               ],
               'highestStreakFriend': {
                 'friendId': 'streak-friend',
@@ -308,31 +331,72 @@ void main() {
           );
         }
         if (request.url.path.endsWith('/search')) {
+          final query = request.url.queryParameters['q']!.toLowerCase();
+          final users = [
+            {
+              '_id': 'existing-friend',
+              'username': 'AlreadyBro',
+              'email': 'already@example.com',
+              'isVerified': true,
+            },
+            {
+              '_id': 'new-friend',
+              'username': 'NewBro',
+              'email': 'new@example.com',
+              'isVerified': true,
+            },
+            {
+              '_id': 'friend-two',
+              'username': 'BroTwo',
+              'email': 'two@example.com',
+              'isVerified': true,
+            },
+            {
+              '_id': 'friend-three',
+              'username': 'BroThree',
+              'email': 'three@example.com',
+              'isVerified': true,
+            },
+            {
+              '_id': 'friend-four',
+              'username': 'BroFour',
+              'email': 'four@example.com',
+              'isVerified': true,
+            },
+          ];
           return http.Response(
-            jsonEncode([
-              {
-                '_id': 'existing-friend',
-                'username': 'AlreadyBro',
-                'email': 'already@example.com',
-                'isVerified': true,
-              },
-              {
-                '_id': 'new-friend',
-                'username': 'NewBro',
-                'email': 'new@example.com',
-                'isVerified': true,
-              },
-            ]),
+            jsonEncode(
+              users
+                  .where(
+                    (user) => (user['username'] as String)
+                        .toLowerCase()
+                        .contains(query),
+                  )
+                  .toList(),
+            ),
             200,
           );
         }
         if (request.method == 'POST') {
+          if (request.url.path.endsWith('/friends/new-friend')) {
+            friendAdded = true;
+          }
           return http.Response(
             jsonEncode({
               'added': true,
               'message': 'Friend added successfully.',
             }),
             201,
+          );
+        }
+        if (request.method == 'DELETE') {
+          friendDeleted = true;
+          return http.Response(
+            jsonEncode({
+              'deleted': true,
+              'message': 'Friend deleted successfully.',
+            }),
+            200,
           );
         }
         return http.Response('{}', 404);
@@ -383,18 +447,78 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    expect(find.text('AlreadyBro'), findsOneWidget);
+    expect(find.text('already@example.com'), findsOneWidget);
+    expect(find.text('0 day streak · 0 bugs'), findsOneWidget);
+    expect(find.text('NewBro'), findsNothing);
+    expect(find.text('BroTwo'), findsOneWidget);
+    expect(find.text('BroThree'), findsOneWidget);
+    expect(find.text('BroFour'), findsNothing);
+    expect(find.byIcon(Icons.add), findsNothing);
+    expect(find.byTooltip('Bug AlreadyBro'), findsOneWidget);
+    expect(find.byTooltip('Bro options'), findsNWidgets(3));
+
+    await tester.tap(find.byTooltip('Bug AlreadyBro'));
+    await tester.pumpAndSettle();
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'POST' &&
+            request.url.path.endsWith('/friends/existing-friend/bug'),
+      ),
+      isTrue,
+    );
+
+    await tester.tap(find.byTooltip('Bro options').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Bro'), findsOneWidget);
+    await tester.tap(find.text('Delete Bro'));
+    await tester.pumpAndSettle();
+    expect(find.text('AlreadyBro'), findsNothing);
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'DELETE' &&
+            request.url.path.endsWith(
+              '/users/current-user/friends/existing-friend',
+            ),
+      ),
+      isTrue,
+    );
+
     final searchQueries = requests
         .where((request) => request.url.path.endsWith('/search'))
         .map((request) => request.url.queryParameters['q'])
         .toList();
     expect(searchQueries, ['B', 'Br', 'Bro']);
-    expect(find.text('AlreadyBro'), findsOneWidget);
-    expect(find.text('NewBro'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget);
-    expect(find.byIcon(Icons.add), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('Add Bros'));
     await tester.pumpAndSettle();
+    final addSearchField = find.byType(TextField).last;
+    await tester.enterText(addSearchField, 'New');
+    await tester.pumpAndSettle();
+
+    final addDialog = find.byType(AlertDialog);
+    expect(
+      find.descendant(of: addDialog, matching: find.text('NewBro')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: addDialog, matching: find.text('AlreadyBro')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: addDialog, matching: find.text('BroTwo')),
+      findsNothing,
+    );
+    expect(find.byTooltip('Add NewBro'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Add NewBro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(of: addDialog, matching: find.text('NewBro')),
+      findsNothing,
+    );
 
     expect(
       requests.any(
@@ -404,8 +528,10 @@ void main() {
       ),
       isTrue,
     );
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('NewBro'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsNothing);
-    expect(find.byIcon(Icons.check), findsNWidgets(2));
   });
 
   testWidgets('deletes a friend from the overflow menu', (tester) async {

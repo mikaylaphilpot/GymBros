@@ -555,10 +555,8 @@ class _FriendsPageState extends State<_FriendsPage> {
   List<SearchUser> _results = [];
   FriendsStats? _friendsStats;
   final Set<String> _friendIds = {};
-  final Set<String> _addingFriendIds = {};
   final Set<String> _deletingFriendIds = {};
   final Set<String> _buggingFriendIds = {};
-  final Map<String, String> _addErrors = {};
   final Map<String, String> _deleteErrors = {};
   final Map<String, String> _bugErrors = {};
   bool _isSearching = false;
@@ -739,43 +737,55 @@ class _FriendsPageState extends State<_FriendsPage> {
   }
 
   Future<void> _addFriend(SearchUser user) async {
-    if (_friendIds.contains(user.id) ||
-        _addingFriendIds.contains(user.id) ||
-        _isLoadingFriends) {
-      return;
-    }
+    await widget.friendsService.addFriend(
+      currentUserId: widget.currentUserId,
+      friendId: user.id,
+    );
+    if (!mounted) return;
+    setState(() => _friendIds.add(user.id));
 
-    setState(() {
-      _addingFriendIds.add(user.id);
-      _addErrors.remove(user.id);
-    });
     try {
-      await widget.friendsService.addFriend(
+      final stats = await widget.friendsService.fetchStats(
         currentUserId: widget.currentUserId,
-        friendId: user.id,
       );
-      if (!mounted) return;
-      setState(() => _friendIds.add(user.id));
-    } on FriendsException catch (error) {
-      if (!mounted) return;
-      setState(() => _addErrors[user.id] = error.message);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _addErrors[user.id] = 'Unable to add this bro.');
-    } finally {
-      if (mounted) setState(() => _addingFriendIds.remove(user.id));
-    }
+      if (mounted) setState(() => _updateFriendIds(stats));
+    } catch (_) {}
   }
 
   Future<void> _showAddFriends(BuildContext context) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => const _AddFriendsDialog(),
+      builder: (context) => _AddFriendsDialog(
+        currentUserId: widget.currentUserId,
+        friendsService: widget.friendsService,
+        friendIds: _friendIds,
+        onAddFriend: _addFriend,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final friendStatsById = <String, FriendDetails>{};
+    final stats = _friendsStats;
+    if (stats != null) {
+      friendStatsById.addAll({
+        for (final friend in stats.otherFriends) friend.friendId: friend,
+      });
+      final highestStreakFriend = stats.highestStreakFriend;
+      if (highestStreakFriend != null) {
+        friendStatsById[highestStreakFriend.friendId] = highestStreakFriend;
+      }
+      final mostBuggedFriend = stats.mostBuggedFriend;
+      if (mostBuggedFriend != null) {
+        friendStatsById[mostBuggedFriend.friendId] = mostBuggedFriend;
+      }
+    }
+    final matchingFriends = _results
+        .where((user) => _friendIds.contains(user.id))
+        .take(3)
+        .toList();
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -796,7 +806,9 @@ class _FriendsPageState extends State<_FriendsPage> {
             ),
             const SizedBox(width: 12),
             FilledButton(
-              onPressed: () => _showAddFriends(context),
+              onPressed: _isLoadingFriends || _friendsLoadFailed
+                  ? null
+                  : () => _showAddFriends(context),
               style: FilledButton.styleFrom(
                 backgroundColor: _red,
                 minimumSize: const Size(0, 54),
@@ -814,73 +826,37 @@ class _FriendsPageState extends State<_FriendsPage> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(_searchError!, style: const TextStyle(color: _red)),
             ),
-          if (_searchError == null && !_isSearching && _results.isEmpty)
+          if (_searchError == null && !_isSearching && matchingFriends.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text('No matching bros found.'),
             )
           else if (_searchError == null)
-            for (final user in _results)
-              Card(
-                color: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: Color(0xFFDDDDDD)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                        title: Text(
-                          user.username,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(user.email),
-                        trailing: _isLoadingFriends
-                            ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : _friendsLoadFailed
-                            ? const Icon(Icons.error_outline, color: _red)
-                            : _friendIds.contains(user.id)
-                            ? const Icon(Icons.check, color: _green)
-                            : IconButton(
-                                tooltip: _addingFriendIds.contains(user.id)
-                                    ? 'Adding bro'
-                                    : 'Add bro',
-                                onPressed: _addingFriendIds.contains(user.id)
-                                    ? null
-                                    : () => _addFriend(user),
-                                icon: _addingFriendIds.contains(user.id)
-                                    ? const SizedBox.square(
-                                        dimension: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.add, color: _red),
-                              ),
-                      ),
+            for (final user in matchingFriends)
+              Builder(
+                builder: (context) {
+                  final friend = friendStatsById[user.id];
+                  if (friend == null) return const SizedBox.shrink();
+                  return Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: const BorderSide(color: Color(0xFFDDDDDD)),
                     ),
-                    if (_addErrors[user.id] != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            _addErrors[user.id]!,
-                            style: const TextStyle(color: _red, fontSize: 12),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                    child: _FriendStatRow(
+                      friend: friend,
+                      email: user.email,
+                      infoLeftInset: 8,
+                      isDeleting: _deletingFriendIds.contains(friend.friendId),
+                      isBugging: _buggingFriendIds.contains(friend.friendId),
+                      error: _deleteErrors[friend.friendId],
+                      bugError: _bugErrors[friend.friendId],
+                      onDelete: () => _deleteFriend(friend),
+                      onBug: () => _bugFriend(friend),
+                    ),
+                  );
+                },
               ),
         ] else ...[
           if (_isLoadingFriends)
@@ -1007,6 +983,8 @@ class _FriendStatRow extends StatelessWidget {
     required this.isBugging,
     required this.onDelete,
     required this.onBug,
+    this.email,
+    this.infoLeftInset = 0,
     this.error,
     this.bugError,
   });
@@ -1014,6 +992,8 @@ class _FriendStatRow extends StatelessWidget {
   final FriendDetails friend;
   final bool isDeleting;
   final bool isBugging;
+  final String? email;
+  final double infoLeftInset;
   final String? error;
   final String? bugError;
   final VoidCallback onDelete;
@@ -1028,21 +1008,26 @@ class _FriendStatRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      friend.username,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    Text(
-                      '${friend.streakCount} day streak · ${friend.bugCount} bugs',
-                      style: const TextStyle(
-                        color: Color(0xFF666666),
-                        fontSize: 12,
+                child: Padding(
+                  padding: EdgeInsets.only(left: infoLeftInset),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friend.username,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                    ),
-                  ],
+                      if (email != null)
+                        Text(email!, style: const TextStyle(fontSize: 12)),
+                      Text(
+                        '${friend.streakCount} day streak · ${friend.bugCount} bugs',
+                        style: const TextStyle(
+                          color: Color(0xFF666666),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1103,26 +1088,180 @@ class _FriendStatRow extends StatelessWidget {
   }
 }
 
-class _AddFriendsDialog extends StatelessWidget {
-  const _AddFriendsDialog();
+class _AddFriendsDialog extends StatefulWidget {
+  const _AddFriendsDialog({
+    required this.currentUserId,
+    required this.friendsService,
+    required this.friendIds,
+    required this.onAddFriend,
+  });
+
+  final String currentUserId;
+  final FriendsService friendsService;
+  final Set<String> friendIds;
+  final Future<void> Function(SearchUser user) onAddFriend;
+
+  @override
+  State<_AddFriendsDialog> createState() => _AddFriendsDialogState();
+}
+
+class _AddFriendsDialogState extends State<_AddFriendsDialog> {
+  final _searchController = TextEditingController();
+  final Set<String> _addedFriendIds = {};
+  final Set<String> _addingFriendIds = {};
+  final Map<String, String> _addErrors = {};
+  List<SearchUser> _results = [];
+  String? _searchError;
+  bool _isSearching = false;
+  int _searchGeneration = 0;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchUsers(String value) async {
+    final generation = ++_searchGeneration;
+    if (value.trim().isEmpty) {
+      setState(() {
+        _results = [];
+        _searchError = null;
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _results = [];
+      _searchError = null;
+      _isSearching = true;
+    });
+    try {
+      final results = await widget.friendsService.searchUsers(value);
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _results = results);
+    } on FriendsException catch (error) {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _searchError = error.message);
+    } catch (_) {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _searchError = 'Unable to search for bros.');
+    } finally {
+      if (mounted && generation == _searchGeneration) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  Future<void> _addFriend(SearchUser user) async {
+    if (!_addingFriendIds.add(user.id)) return;
+    setState(() => _addErrors.remove(user.id));
+    try {
+      await widget.onAddFriend(user);
+      if (mounted) setState(() => _addedFriendIds.add(user.id));
+    } on FriendsException catch (error) {
+      if (mounted) setState(() => _addErrors[user.id] = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _addErrors[user.id] = 'Unable to add this bro.');
+      }
+    } finally {
+      _addingFriendIds.remove(user.id);
+      if (mounted) setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final availableUsers = _results
+        .where(
+          (user) =>
+              user.id != widget.currentUserId &&
+              !widget.friendIds.contains(user.id) &&
+              !_addedFriendIds.contains(user.id),
+        )
+        .toList();
+
     return AlertDialog(
       title: const Text('Add Bros'),
-      content: const Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Add a bro using their username.'),
-          SizedBox(height: 16),
-          TextField(
-            decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Find your Bro',
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _searchController,
+              onChanged: _searchUsers,
+              textCapitalization: TextCapitalization.none,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Find people to add',
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            if (_isSearching) const LinearProgressIndicator(color: _red),
+            if (_searchError != null)
+              Text(_searchError!, style: const TextStyle(color: _red)),
+            if (_searchController.text.trim().isNotEmpty &&
+                !_isSearching &&
+                _searchError == null &&
+                availableUsers.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('No people available to add.'),
+              ),
+            if (availableUsers.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final user in availableUsers)
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(user.username),
+                            subtitle: Text(user.email),
+                            trailing: IconButton(
+                              tooltip: _addingFriendIds.contains(user.id)
+                                  ? 'Adding ${user.username}'
+                                  : 'Add ${user.username}',
+                              onPressed: _addingFriendIds.contains(user.id)
+                                  ? null
+                                  : () => _addFriend(user),
+                              icon: _addingFriendIds.contains(user.id)
+                                  ? const SizedBox.square(
+                                      dimension: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.add, color: _red),
+                            ),
+                          ),
+                          if (_addErrors[user.id] != null)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                _addErrors[user.id]!,
+                                style: const TextStyle(
+                                  color: _red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
       actions: [
         FilledButton(
