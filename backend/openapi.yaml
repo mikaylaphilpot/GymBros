@@ -2,14 +2,16 @@ openapi: 3.0.0
 info:
   title: GymBros API
   version: 1.0.0
-  description: API demonstration for the GymBros MERN project.
+  description: Complete API documentation for the GymBros MERN project.
 servers:
   - url: http://137.184.142.16:5001
     description: DigitalOcean deployment
 tags:
   - name: Health
   - name: Authentication
+  - name: Users and friends
   - name: Schedules
+  - name: Notifications
 components:
   securitySchemes:
     bearerAuth:
@@ -17,11 +19,14 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
     LoginRequest:
       type: object
-      required:
-        - identifier
-        - password
+      required: [identifier, password]
       properties:
         identifier:
           type: string
@@ -31,12 +36,78 @@ components:
           type: string
           format: password
           example: Password1!
+    SignupRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          example: user1
+        email:
+          type: string
+          format: email
+          example: user1@example.com
+        password:
+          type: string
+          format: password
+          example: Password1!
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user1@example.com
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+          example: NewPassword1!
+    ProfileUpdateRequest:
+      type: object
+      required: [name, username, currentPassword]
+      properties:
+        name:
+          type: string
+          example: Gym Bros User
+        username:
+          type: string
+          example: user1
+        currentPassword:
+          type: string
+          format: password
+          example: Password1!
+        password:
+          type: string
+          format: password
+          description: Optional replacement password.
+          example: NewPassword1!
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+          format: email
     Schedule:
       type: object
       properties:
         _id:
           type: string
           example: 507f1f77bcf86cd799439011
+        userId:
+          type: string
         dayOfWeek:
           type: string
           enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
@@ -49,29 +120,183 @@ components:
         activity:
           type: string
           example: Chest and triceps
+        isCompletedToday:
+          type: boolean
+        completedDate:
+          type: string
+          nullable: true
+          example: 2026-11-14
+    ScheduleRequest:
+      type: object
+      required: [dayOfWeek, startTime, endTime, activity]
+      properties:
+        dayOfWeek:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+        startTime:
+          type: string
+          example: 6:00 AM
+        endTime:
+          type: string
+          example: 7:00 AM
+        activity:
+          type: string
+          example: Chest and triceps
+    ScheduleUpdateRequest:
+      type: object
+      properties:
+        dayOfWeek:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+        startTime:
+          type: string
+          example: 6:00 AM
+        endTime:
+          type: string
+          example: 7:00 AM
+        activity:
+          type: string
+          example: Chest and triceps
+    CompletionRequest:
+      type: object
+      required: [isCompletedToday]
+      properties:
+        isCompletedToday:
+          type: boolean
+          example: true
+    NotificationRequest:
+      type: object
+      required: [targetUserId, title, message]
+      properties:
+        targetUserId:
+          type: string
+        title:
+          type: string
+          example: GymBros reminder
+        message:
+          type: string
+          example: Time to train!
+        url:
+          type: string
+          example: /home-page
+    PushNotificationRequest:
+      type: object
+      required: [targetUserId, messageText]
+      properties:
+        targetUserId:
+          type: string
+        messageText:
+          type: string
+          example: Time to train!
+        title:
+          type: string
+          example: GymBros Notification
+        url:
+          type: string
+          example: /
+    DeviceTokenRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token:
+          type: string
+        platform:
+          type: string
+          enum: [android, ios]
+    PushSubscriptionRequest:
+      type: object
+      required: [subscription]
+      properties:
+        subscription:
+          type: object
+          required: [endpoint, keys]
+          properties:
+            endpoint:
+              type: string
+              format: uri
+            expirationTime:
+              type: integer
+              nullable: true
+            keys:
+              type: object
+              required: [p256dh, auth]
+              properties:
+                p256dh:
+                  type: string
+                auth:
+                  type: string
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+  parameters:
+    CurrentUserId:
+      name: currentUserId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ID of the authenticated user.
+    FriendId:
+      name: friendId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ID of the friend.
+    ScheduleId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ID of the schedule entry.
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ID of the notification.
 paths:
   /api/test:
     get:
       tags: [Health]
       summary: Test API connection
-      description: Public endpoint confirming that the backend is running.
+      security: []
       responses:
         "200":
           description: Backend is working.
           content:
             application/json:
               schema:
-                type: object
-                required: [message]
-                properties:
-                  message:
-                    type: string
-                    example: Backend is working!
+                $ref: "#/components/schemas/Message"
+  /api/auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: Account created and verification email sent.
+        "400":
+          description: Invalid signup details.
+        "409":
+          description: Username or email already exists.
+        "500":
+          description: Server or email delivery error.
   /api/auth/login:
     post:
       tags: [Authentication]
       summary: Log in
-      description: Returns a JWT for a verified account.
+      security: []
       requestBody:
         required: true
         content:
@@ -94,20 +319,209 @@ paths:
         "400":
           description: Invalid login input.
         "401":
-          description: Invalid credentials or unverified account.
+          description: Invalid credentials.
+        "403":
+          description: Email has not been verified.
   /api/auth/me:
     get:
       tags: [Authentication]
-      summary: Get the current user
+      summary: Get the current user's profile
       security:
         - bearerAuth: []
       responses:
         "200":
           description: Current user's public profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
         "401":
           description: Missing or invalid JWT.
         "404":
           description: User not found.
+    patch:
+      tags: [Authentication]
+      summary: Update the current user's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+      responses:
+        "200":
+          description: Profile updated.
+        "400":
+          description: Invalid profile or password data.
+        "401":
+          description: Missing JWT or incorrect current password.
+        "409":
+          description: Username already in use.
+  /api/auth/verify-email:
+    get:
+      tags: [Authentication]
+      summary: Verify an email address
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified.
+        "400":
+          description: Invalid or expired verification token.
+  /api/auth/resend-verification:
+    post:
+      tags: [Authentication]
+      summary: Resend an email verification link
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "200":
+          description: Verification request processed.
+        "400":
+          description: Invalid email address.
+        "404":
+          description: No unverified account found.
+  /api/auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request a password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "200":
+          description: Password reset request processed.
+        "400":
+          description: Invalid email address.
+  /api/auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset a password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset succeeded.
+        "400":
+          description: Invalid or expired token, or invalid password.
+  /api/users/search:
+    get:
+      tags: [Users and friends]
+      summary: Search for users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Partial username or email search.
+      responses:
+        "200":
+          description: Up to 20 matching users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Missing or invalid JWT.
+  /api/users/{currentUserId}/friends/stats:
+    get:
+      tags: [Users and friends]
+      summary: Get friend statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CurrentUserId"
+      responses:
+        "200":
+          description: Friend statistics grouped by streak and bug count.
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Current user ID does not match the JWT.
+        "404":
+          description: Current user was not found.
+  /api/users/{currentUserId}/friends/workouts/today:
+    get:
+      tags: [Users and friends]
+      summary: Get friends' workouts for today
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CurrentUserId"
+      responses:
+        "200":
+          description: Friends with workouts scheduled for today.
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Current user ID does not match the JWT.
+  /api/users/{currentUserId}/friends/{friendId}:
+    post:
+      tags: [Users and friends]
+      summary: Add a friend
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CurrentUserId"
+        - $ref: "#/components/parameters/FriendId"
+      responses:
+        "200":
+          description: Friend was already present.
+        "201":
+          description: Friend added.
+        "400":
+          description: Invalid friend ID.
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Current user ID does not match the JWT.
+        "404":
+          description: Friend user was not found.
+    delete:
+      tags: [Users and friends]
+      summary: Remove a friend
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CurrentUserId"
+        - $ref: "#/components/parameters/FriendId"
+      responses:
+        "200":
+          description: Friend removed or was not in the list.
+        "400":
+          description: Invalid friend ID.
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Current user ID does not match the JWT.
+        "404":
+          description: Current user was not found.
   /api/schedules:
     get:
       tags: [Schedules]
@@ -125,3 +539,298 @@ paths:
                   $ref: "#/components/schemas/Schedule"
         "401":
           description: Missing or invalid JWT.
+    post:
+      tags: [Schedules]
+      summary: Create a schedule entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleRequest"
+      responses:
+        "201":
+          description: Schedule entry created.
+        "400":
+          description: Invalid schedule data.
+        "401":
+          description: Missing or invalid JWT.
+  /api/schedules/today:
+    get:
+      tags: [Schedules]
+      summary: Get today's schedule
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Today's schedule entries.
+        "401":
+          description: Missing or invalid JWT.
+  /api/schedules/{id}:
+    patch:
+      tags: [Schedules]
+      summary: Update a schedule entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ScheduleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleUpdateRequest"
+      responses:
+        "200":
+          description: Schedule entry updated.
+        "400":
+          description: Invalid schedule ID or update data.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Schedule entry not found.
+    delete:
+      tags: [Schedules]
+      summary: Delete a schedule entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ScheduleId"
+      responses:
+        "200":
+          description: Schedule entry deleted.
+        "400":
+          description: Invalid schedule ID.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Schedule entry not found.
+  /api/schedules/{id}/completion:
+    patch:
+      tags: [Schedules]
+      summary: Mark a schedule entry complete or incomplete
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ScheduleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompletionRequest"
+      responses:
+        "200":
+          description: Completion status updated.
+        "400":
+          description: Invalid schedule ID or completion value.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Today's schedule entry was not found.
+  /api/notifications/inbox:
+    get:
+      tags: [Notifications]
+      summary: List in-app notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Notifications ordered newest first.
+        "401":
+          description: Missing or invalid JWT.
+        "503":
+          description: In-app notifications are not configured.
+  /api/notifications/inbox/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+      responses:
+        "204":
+          description: Notification marked as read.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Notification not found.
+  /api/notifications:
+    post:
+      tags: [Notifications]
+      summary: Create an in-app notification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationRequest"
+      responses:
+        "201":
+          description: Notification created.
+        "400":
+          description: Missing required notification fields.
+        "401":
+          description: Missing or invalid JWT.
+  /api/notifications/device-token:
+    post:
+      tags: [Notifications]
+      summary: Register a mobile device token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceTokenRequest"
+      responses:
+        "204":
+          description: Device token saved.
+        "400":
+          description: Invalid token or platform.
+        "401":
+          description: Missing or invalid JWT.
+    delete:
+      tags: [Notifications]
+      summary: Remove a mobile device token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceTokenRequest"
+      responses:
+        "204":
+          description: Device token removed.
+        "400":
+          description: Invalid token.
+        "401":
+          description: Missing or invalid JWT.
+  /api/notifications/friends/{friendId}/bug:
+    post:
+      tags: [Notifications]
+      summary: Send a workout reminder to a friend
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FriendId"
+      responses:
+        "201":
+          description: Reminder notification created.
+        "400":
+          description: Invalid friend ID.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Friend relationship not found.
+  /api/notifications/friends/{friendId}/congratulate:
+    post:
+      tags: [Notifications]
+      summary: Congratulate a friend
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FriendId"
+      responses:
+        "201":
+          description: Congratulatory notification created.
+        "400":
+          description: Invalid friend ID.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Friend relationship not found.
+  /api/notifications/subscribe:
+    post:
+      tags: [Notifications]
+      summary: Save a browser push subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionRequest"
+      responses:
+        "201":
+          description: Subscription saved.
+        "400":
+          description: Invalid push subscription.
+        "401":
+          description: Missing or invalid JWT.
+  /api/notifications/send:
+    post:
+      tags: [Notifications]
+      summary: Send a browser push notification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushNotificationRequest"
+      responses:
+        "200":
+          description: Notification sent.
+        "400":
+          description: Missing required fields.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Target user is not subscribed.
+        "410":
+          description: Target subscription is no longer valid.
+  /api/notifications/test:
+    post:
+      tags: [Notifications]
+      summary: Send a test browser notification
+      description: Development-only endpoint. It is not mounted when NODE_ENV=production.
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messageText:
+                  type: string
+                  example: Time to train!
+                title:
+                  type: string
+                  example: GymBros Test
+                url:
+                  type: string
+                  example: /
+      responses:
+        "200":
+          description: Test notification sent.
+        "401":
+          description: Missing or invalid JWT.
+        "404":
+          description: Current user has no browser subscription.
+        "410":
+          description: Current subscription is no longer valid.

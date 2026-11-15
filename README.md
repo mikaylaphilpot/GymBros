@@ -91,8 +91,7 @@ Errors:
 ## SwaggerHub API demonstration
 
 The backend permits SwaggerHub's **Try it out** requests from
-`https://app.swaggerhub.com` and supports credentialed requests. The
-OpenAPI document used to create the SwaggerHub API is
+`https://app.swaggerhub.com` and supports credentialed requests. The complete OpenAPI document used to create the SwaggerHub API is
 [`backend/openapi.yaml`](./backend/openapi.yaml).
 
 Use the deployed server URL `http://137.184.142.16:5001` while HTTPS and the
