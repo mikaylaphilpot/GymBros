@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../config/app_config.dart';
 
 class WorkoutSchedule {
   const WorkoutSchedule({
@@ -64,13 +65,7 @@ class ScheduleService {
     required this.tokenStore,
     String? baseUrl,
   }) : _client = client ?? http.Client(),
-       _baseUri = _schedulesBaseUri(
-         baseUrl ??
-             const String.fromEnvironment(
-               'API_BASE_URL',
-               defaultValue: 'http://10.0.2.2:5001/api/auth/',
-             ),
-       );
+       _baseUri = _schedulesBaseUri(baseUrl ?? apiBaseUrl);
 
   final http.Client _client;
   final TokenStore tokenStore;

@@ -25,7 +25,17 @@ flutter emulators
 flutter run
 ```
 
-Start the backend separately from `backend/` with `npm run dev`. The Android emulator reaches the host computer through `10.0.2.2`, so the app defaults to `http://10.0.2.2:5001/api/auth/`.
+Start the backend separately from `backend/` with `npm run dev`. Release builds
+default to the deployed HTTPS API at
+`https://cop4431-jonathonf.online/api/auth/`. No `.env` file is bundled with or
+required by the mobile app.
+
+For local Android emulator development, use the host computer through
+`10.0.2.2`:
+
+```sh
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5001/api/auth/
+```
 
 For a physical Android device, use the computer's LAN IP address instead. The phone and computer must be on the same network, and the computer firewall must allow the backend port:
 
@@ -33,7 +43,9 @@ For a physical Android device, use the computer's LAN IP address instead. The ph
 flutter run --dart-define=API_BASE_URL=http://192.168.1.10:5001/api/auth/
 ```
 
-Replace `192.168.1.10` with the computer's LAN IP. `API_BASE_URL` is the full auth API base URL and should end in `/api/auth/`. The default HTTP address and cleartext traffic are for local debug development; use an HTTPS URL for release builds:
+Replace `192.168.1.10` with the computer's LAN IP. `API_BASE_URL` is the
+full auth API base URL and should end in `/api/auth/`. The default production
+URL can still be overridden for a release build when needed:
 
 ```sh
 flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/api/auth/
@@ -51,7 +63,13 @@ The backend permits registration only when the username and email are unused, th
 - The sign-in screen can resend a verification email, submit a verification link/token, request a password-reset email, and reset the password with a pasted reset link/token. The app extracts the token from the email URL and submits it to the existing backend endpoints.
 - The signed-in schedule screen loads the user's workouts and supports adding, editing, and deleting entries through `GET`, `POST`, `PATCH`, and `DELETE /api/schedules`. Requests use the saved bearer token; schedule data is refreshed by pulling down on the list. Day and time inputs follow the backend's accepted values (`Monday`-`Sunday` and a time such as `6:30 PM`).
 - Schedule requests derive `/api/schedules/` from `API_BASE_URL`, which remains the full auth URL ending in `/api/auth/`. The same emulator default and physical-device override therefore work for both auth and schedule calls.
-- The default auth base URL can be overridden with the compile-time `API_BASE_URL` Dart define. This keeps local network addresses out of the source and lets teammates use their emulator, phone, or deployed HTTPS API.
+- The default auth base URL is the deployed HTTPS API and can be overridden with
+  the compile-time `API_BASE_URL` Dart define. This keeps local network
+  addresses out of the release configuration while letting teammates use their
+  emulator, phone, or another deployed API.
+- The Vite variables and VAPID public key used by the web frontend are not used
+  by the Flutter app. Android push notifications use Firebase Cloud Messaging
+  and the app's Firebase configuration instead.
 
 When adding an authenticated API feature, add the typed request/response behavior to `AuthService` (or a separate service for non-auth endpoints), pass bearer tokens through the service rather than UI widgets, surface backend error messages, and add tests for both successful and failing responses. Keep password/token values out of logs.
 

@@ -7,7 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:http/http.dart' as http;
 
-const _defaultAuthUrl = 'http://10.0.2.2:5001/api/auth/';
+import '../config/app_config.dart';
+
 const _tokenKey = 'auth_token';
 
 abstract interface class TokenStore {
@@ -79,13 +80,7 @@ class AuthService {
   AuthService({http.Client? client, TokenStore? tokenStore, String? baseUrl})
     : _client = client ?? http.Client(),
       _tokenStore = tokenStore ?? const SecureTokenStore(),
-      _baseUri = _withTrailingSlash(
-        baseUrl ??
-            const String.fromEnvironment(
-              'API_BASE_URL',
-              defaultValue: _defaultAuthUrl,
-            ),
-      );
+      _baseUri = _withTrailingSlash(baseUrl ?? apiBaseUrl);
 
   final http.Client _client;
   final TokenStore _tokenStore;
