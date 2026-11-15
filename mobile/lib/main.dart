@@ -7,7 +7,6 @@ import 'auth/auth_service.dart';
 import 'friends/friends_service.dart';
 import 'pages/login_page.dart';
 import 'notifications/notification_service.dart';
-import 'pages/notifications_page.dart';
 import 'schedules/schedule_service.dart';
 import 'screens/app_screens.dart';
 
@@ -35,14 +34,12 @@ class GymBrosApp extends StatefulWidget {
     required this.authService,
     this.scheduleService,
     this.notificationService,
-    this.scheduleService,
     this.friendsService,
   });
 
   final AuthService authService;
   final ScheduleService? scheduleService;
   final NotificationService? notificationService;
-  final ScheduleService? scheduleService;
   final FriendsService? friendsService;
 
   @override
@@ -188,12 +185,11 @@ class _GymBrosAppState extends State<GymBrosApp> {
                           ),
                         ),
                   )
-          : ScheduleScreen(
-              username: _user!.username,
-              scheduleService: _scheduleService,
+            : HomeScreen(
+              user: _user!,
               onLogOut: _logOut,
               authService: widget.authService,
-              scheduleService: widget.scheduleService,
+              scheduleService: _scheduleService,
               friendsService: widget.friendsService,
             ),
     );

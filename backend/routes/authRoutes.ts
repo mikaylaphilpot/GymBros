@@ -83,6 +83,7 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
   // Preserve the entered casing for display while treating both identifiers as case-insensitive.
   const exactUsername = username.trim();
   const exactEmail = email.trim();
+  const normalizedEmail = exactEmail.toLowerCase();
 
   if (!emailRegex.test(normalizedEmail)) {
     res.status(400).json({ message: 'Invalid Email Format' });
