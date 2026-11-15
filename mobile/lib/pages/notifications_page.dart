@@ -1,3 +1,4 @@
+// Shows the notification inbox and refreshes it after a notification is read.
 import 'package:flutter/material.dart';
 
 import '../notifications/notification_service.dart';

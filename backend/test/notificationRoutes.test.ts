@@ -167,94 +167,6 @@ test("sends a test notification to the authenticated user", async () => {
     sentPayload = JSON.parse(payload) as Record<string, unknown>;
   });
 
-  test("creates, lists, and marks an in-app notification as read", async () => {
-    const server = createTestServer();
-    const created = await request(server.server, "/api/notifications", {
-      method: "POST",
-      headers: { "x-user-id": "sender" },
-      body: JSON.stringify({
-        targetUserId: "recipient",
-        title: "Friend request",
-        message: "You have a new friend request.",
-      }),
-    });
-    assert.equal(created.status, 201);
-    const notification = created.body.notification as Record<string, unknown>;
-    assert.equal(notification.read, false);
-
-    const listed = await request(server.server, "/api/notifications/inbox", {
-      method: "GET",
-      headers: { "x-user-id": "recipient" },
-    });
-    assert.equal(listed.status, 200);
-    const notifications = listed.body.notifications as Array<Record<string, unknown>>;
-    assert.equal(notifications.length, 1);
-
-    const marked = await request(
-      server.server,
-      `/api/notifications/inbox/${notification.id as string}/read`,
-      { method: "PATCH", headers: { "x-user-id": "recipient" } },
-    );
-    assert.equal(marked.status, 204);
-    const unread = await request(
-      server.server,
-      "/api/notifications/inbox?unreadOnly=true",
-      { method: "GET", headers: { "x-user-id": "recipient" } },
-    );
-    assert.deepEqual(unread.body.notifications, []);
-  });
-
-  test("validates and stores an authenticated device token", async () => {
-    const server = createTestServer();
-    const saved = await request(server.server, "/api/notifications/device-token", {
-      method: "POST",
-      headers: { "x-user-id": "user-5" },
-      body: JSON.stringify({ token: "fcm-token", platform: "android" }),
-    });
-
-    test("sends native notifications and removes invalid FCM tokens", async () => {
-      let sentTokens: string[] = [];
-      const server = createTestServer(
-        undefined,
-        {
-          async send(tokens) {
-            sentTokens = tokens;
-            return ["expired-token"];
-          },
-        },
-      );
-      await request(server.server, "/api/notifications/device-token", {
-        method: "POST",
-        headers: { "x-user-id": "recipient" },
-        body: JSON.stringify({ token: "expired-token", platform: "android" }),
-      });
-      await request(server.server, "/api/notifications/device-token", {
-        method: "POST",
-        headers: { "x-user-id": "recipient" },
-        body: JSON.stringify({ token: "valid-token", platform: "android" }),
-      });
-
-      const result = await request(server.server, "/api/notifications", {
-        method: "POST",
-        headers: { "x-user-id": "sender" },
-        body: JSON.stringify({
-          targetUserId: "recipient",
-          title: "Friend request",
-          message: "You have a new friend request.",
-        }),
-      });
-
-      assert.equal(result.status, 201);
-      assert.deepEqual(sentTokens, ["expired-token", "valid-token"]);
-      assert.deepEqual(server.deviceTokens, [
-        { userId: "recipient", token: "valid-token", platform: "android" },
-      ]);
-    });
-    assert.equal(saved.status, 204);
-    assert.deepEqual(server.deviceTokens, [
-      { userId: "user-5", token: "fcm-token", platform: "android" },
-    ]);
-  });
   await server.store.save("user-4", subscription);
 
   const result = await request(server.server, "/api/notifications/test", {
@@ -269,4 +181,91 @@ test("sends a test notification to the authenticated user", async () => {
     body: "Time to train!",
     url: "/",
   });
+});
+
+test("creates, lists, and marks an in-app notification as read", async () => {
+  const server = createTestServer();
+  const created = await request(server.server, "/api/notifications", {
+    method: "POST",
+    headers: { "x-user-id": "sender" },
+    body: JSON.stringify({
+      targetUserId: "recipient",
+      title: "Friend request",
+      message: "You have a new friend request.",
+    }),
+  });
+  assert.equal(created.status, 201);
+  const notification = created.body.notification as Record<string, unknown>;
+  assert.equal(notification.read, false);
+
+  const listed = await request(server.server, "/api/notifications/inbox", {
+    method: "GET",
+    headers: { "x-user-id": "recipient" },
+  });
+  assert.equal(listed.status, 200);
+  const notifications = listed.body.notifications as Array<Record<string, unknown>>;
+  assert.equal(notifications.length, 1);
+
+  const marked = await request(
+    server.server,
+    `/api/notifications/inbox/${notification.id as string}/read`,
+    { method: "PATCH", headers: { "x-user-id": "recipient" } },
+  );
+  assert.equal(marked.status, 204);
+  const unread = await request(
+    server.server,
+    "/api/notifications/inbox?unreadOnly=true",
+    { method: "GET", headers: { "x-user-id": "recipient" } },
+  );
+  assert.deepEqual(unread.body.notifications, []);
+});
+
+test("validates and stores an authenticated device token", async () => {
+  const server = createTestServer();
+  const saved = await request(server.server, "/api/notifications/device-token", {
+    method: "POST",
+    headers: { "x-user-id": "user-5" },
+    body: JSON.stringify({ token: "fcm-token", platform: "android" }),
+  });
+
+  assert.equal(saved.status, 204);
+  assert.deepEqual(server.deviceTokens, [
+    { userId: "user-5", token: "fcm-token", platform: "android" },
+  ]);
+});
+
+test("sends native notifications and removes invalid FCM tokens", async () => {
+  let sentTokens: string[] = [];
+  const server = createTestServer(undefined, {
+    async send(tokens) {
+      sentTokens = tokens;
+      return ["expired-token"];
+    },
+  });
+  await request(server.server, "/api/notifications/device-token", {
+    method: "POST",
+    headers: { "x-user-id": "recipient" },
+    body: JSON.stringify({ token: "expired-token", platform: "android" }),
+  });
+  await request(server.server, "/api/notifications/device-token", {
+    method: "POST",
+    headers: { "x-user-id": "recipient" },
+    body: JSON.stringify({ token: "valid-token", platform: "android" }),
+  });
+
+  const result = await request(server.server, "/api/notifications", {
+    method: "POST",
+    headers: { "x-user-id": "sender" },
+    body: JSON.stringify({
+      targetUserId: "recipient",
+      title: "Friend request",
+      message: "You have a new friend request.",
+    }),
+  });
+
+  assert.equal(result.status, 201);
+  assert.deepEqual(sentTokens, ["expired-token", "valid-token"]);
+  assert.deepEqual(server.deviceTokens, [
+    { userId: "recipient", token: "valid-token", platform: "android" },
+  ]);
 });

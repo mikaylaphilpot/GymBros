@@ -52,7 +52,9 @@ const fullDayNames: Record<string, string> = {
 //Convert a schedule item's time values to the format required by DB
 function convertTo24Hour(time: string): string {
     const [timePart, period] = time.split(" ");
-    let [hour, minute] = timePart.split(":").map(Number);
+    const [hourPart, minutePart] = timePart.split(":");
+    let hour = Number(hourPart);
+    const minute = Number(minutePart);
 
     if (period === "PM" && hour !== 12) hour += 12;
     if (period === "AM" && hour === 12) hour = 0;

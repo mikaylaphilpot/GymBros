@@ -84,7 +84,7 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
   const exactUsername = username.trim();
   const exactEmail = email.trim();
 
-  if (!emailRegex.test(exactEmail)) {
+  if (!emailRegex.test(normalizedEmail)) {
     res.status(400).json({ message: 'Invalid Email Format' });
     return;
   }
@@ -113,15 +113,15 @@ router.post('/signup', async (req: Request<Record<string, never>, unknown, Signu
 
     // Hash the password before storing the new account.
     await User.create({
-      username: exactUsername,
-      email: exactEmail,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
       verificationToken: hashedVerificationToken,
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
     });
 
     await sendEmail(
-      exactEmail,
+      normalizedEmail,
       'Verify your GymBros account',
       `Click this link to verify your email: ${verificationLinkFor(verificationToken)}`
     );
