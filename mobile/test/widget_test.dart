@@ -38,12 +38,14 @@ FriendsService _emptyFriendsService(TokenStore tokenStore) => FriendsService(
   tokenStore: tokenStore,
   baseUrl: 'http://localhost:5001/api/auth/',
   client: MockClient(
-    (_) async => http.Response(
-      jsonEncode({
-        'otherFriends': [],
-        'highestStreakFriend': null,
-        'mostBuggedFriend': null,
-      }),
+    (request) async => http.Response(
+      request.url.path.endsWith('/friends/workouts/today')
+          ? '[]'
+          : jsonEncode({
+              'otherFriends': [],
+              'highestStreakFriend': null,
+              'mostBuggedFriend': null,
+            }),
       200,
     ),
   ),
@@ -147,6 +149,124 @@ void main() {
     expect(find.text('No workouts scheduled yet.'), findsOneWidget);
   });
 
+  testWidgets('home shows friend workout status cards and correct actions', (
+    tester,
+  ) async {
+    final tokenStore = _MemoryTokenStore()..token = 'test-token';
+    final requests = <http.Request>[];
+    final friendsService = FriendsService(
+      tokenStore: tokenStore,
+      baseUrl: 'http://localhost:5001/api/auth/',
+      client: MockClient((request) async {
+        requests.add(request);
+        if (request.url.path.endsWith('/friends/workouts/today')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'friendId': 'bro-id',
+                'username': 'WorkoutBro',
+                'streakCount': 3,
+                'bugCount': 1,
+                'lastBuggedAt': null,
+                'workouts': [
+                  {
+                    'scheduleId': 'overdue-id',
+                    'activity': 'Past workout',
+                    'startTime': '11:00 PM',
+                    'endTime': '12:00 AM',
+                    'isCompletedToday': false,
+                  },
+                  {
+                    'scheduleId': 'upcoming-id',
+                    'activity': 'Future workout',
+                    'startTime': '10:00 PM',
+                    'endTime': '11:59 PM',
+                    'isCompletedToday': false,
+                  },
+                  {
+                    'scheduleId': 'completed-id',
+                    'activity': 'Finished workout',
+                    'startTime': '11:00 PM',
+                    'endTime': '12:00 AM',
+                    'isCompletedToday': true,
+                  },
+                ],
+              },
+            ]),
+            200,
+          );
+        }
+        if (request.method == 'POST') {
+          return http.Response(jsonEncode({'notification': {}}), 201);
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          user: const AuthUser(
+            id: 'current-user',
+            name: 'John Gymborough',
+            username: 'Jymbro20',
+            email: 'current@example.com',
+          ),
+          onLogOut: () {},
+          friendsService: friendsService,
+          scheduleService: _emptyScheduleService(tokenStore),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Past workout'), findsOneWidget);
+    expect(find.textContaining('Future workout'), findsOneWidget);
+    expect(find.textContaining('Finished workout'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Card && widget.color == const Color(0xFFFF9294),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Card && widget.color == const Color(0xFFFFF2B2),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Card && widget.color == const Color(0xFFC7F4AA),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Bug WorkoutBro'), findsNWidgets(2));
+    expect(find.byTooltip('Congratulate WorkoutBro'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Bug WorkoutBro').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Congratulate WorkoutBro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'POST' &&
+            request.url.path.endsWith('/friends/bro-id/bug'),
+      ),
+      isTrue,
+    );
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'POST' &&
+            request.url.path.endsWith('/friends/bro-id/congratulate'),
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('search results show friend status and add searched users', (
     tester,
   ) async {
@@ -243,6 +363,18 @@ void main() {
     expect(find.text('StreakBro'), findsOneWidget);
     expect(find.text('Regular Bros'), findsOneWidget);
     expect(find.text('AlreadyBro'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Bug BestBro'));
+    await tester.pumpAndSettle();
+    expect(
+      requests.any(
+        (request) =>
+            request.method == 'POST' &&
+            request.url.path.endsWith('/friends/bugged-friend/bug'),
+      ),
+      isTrue,
+    );
+
     final searchField = find.byType(TextField).first;
     for (final query in ['B', 'Br', 'Bro']) {
       await tester.enterText(searchField, query);
@@ -401,6 +533,7 @@ void main() {
                 'startTime': '9:00 AM',
                 'endTime': '10:00 AM',
                 'activity': activity,
+                  'isCompletedToday': false,
               },
             ]),
             200,
@@ -409,10 +542,14 @@ void main() {
         if (request.method == 'PATCH') {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           activity = body['activity'] as String;
-          return http.Response(
-            jsonEncode({'_id': 'schedule-id', ...body}),
-            200,
-          );
+            return http.Response(
+              jsonEncode({
+                '_id': 'schedule-id',
+                ...body,
+                'isCompletedToday': false,
+              }),
+              200,
+            );
         }
         return http.Response('{}', 404);
       }),
@@ -462,6 +599,16 @@ void main() {
     );
     expect(find.text('$today: 9:00 AM - 10:00 AM, Swimming'), findsOneWidget);
 
+    await tester.tap(find.byType(NavigationDestination).at(0));
+    await tester.pumpAndSettle();
+    expect(find.text('9:00 AM - 10:00 AM, Swimming'), findsOneWidget);
+    expect(
+      scheduleRequests.where((request) => request.method == 'GET').length,
+      4,
+    );
+
+    await tester.tap(find.byType(NavigationDestination).at(2));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('User Information'));
     await tester.tap(find.widgetWithText(TextButton, 'Edit').last);
     await tester.pumpAndSettle();

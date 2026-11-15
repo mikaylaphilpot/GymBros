@@ -8,6 +8,32 @@ import '../schedules/schedule_service.dart';
 const _red = Color(0xFFB31517);
 const _pageBackground = Color(0xFFE9E4DF);
 const _green = Color(0xFF61B315);
+const _yellow = Color(0xFFFFD84D);
+const _overdueFill = Color(0xFFFF9294);
+const _completedFill = Color(0xFFC7F4AA);
+const _upcomingFill = Color(0xFFFFF2B2);
+
+enum _FriendWorkoutStatus { completed, overdue, upcoming }
+
+_FriendWorkoutStatus _friendWorkoutStatus(FriendWorkoutItem workout) {
+  if (workout.isCompletedToday) return _FriendWorkoutStatus.completed;
+
+  final match = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$', caseSensitive: false)
+    .firstMatch(workout.endTime.trim());
+  if (match == null) return _FriendWorkoutStatus.upcoming;
+
+  var hours = int.parse(match.group(1)!);
+  final minutes = int.parse(match.group(2)!);
+  final period = match.group(3)!.toUpperCase();
+  if (period == 'PM' && hours != 12) hours += 12;
+  if (period == 'AM' && hours == 12) hours = 0;
+  final endMinutes = hours * 60 + minutes;
+  final now = DateTime.now();
+  final currentMinutes = now.hour * 60 + now.minute;
+  return currentMinutes >= endMinutes
+    ? _FriendWorkoutStatus.overdue
+    : _FriendWorkoutStatus.upcoming;
+}
 
 ThemeData _screenTheme(BuildContext context) {
   return Theme.of(context).copyWith(
@@ -115,6 +141,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
+  int _scheduleRevision = 0;
   late final FriendsService _friendsService =
       widget.friendsService ??
       FriendsService(tokenStore: const SecureTokenStore());
@@ -154,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 currentUserId: widget.user.id,
                 friendsService: _friendsService,
                 scheduleService: _scheduleService,
+                scheduleRevision: _scheduleRevision,
                 onShowFriends: () => setState(() => _tab = 1),
               ),
               _FriendsPage(
@@ -164,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 user: widget.user,
                 authService: _authService,
                 scheduleService: _scheduleService,
+                onScheduleChanged: () => setState(() => _scheduleRevision++),
                 onLogOut: widget.onLogOut,
               ),
             ],
@@ -197,12 +226,14 @@ class _HomePage extends StatefulWidget {
     required this.currentUserId,
     required this.friendsService,
     required this.scheduleService,
+    required this.scheduleRevision,
     required this.onShowFriends,
   });
 
   final String currentUserId;
   final FriendsService friendsService;
   final ScheduleService scheduleService;
+  final int scheduleRevision;
   final VoidCallback onShowFriends;
 
   @override
@@ -221,17 +252,34 @@ class _HomePageState extends State<_HomePage> {
   ];
 
   List<WorkoutSchedule> _schedules = [];
-  FriendsStats? _friendsStats;
+  List<FriendWorkout> _friendsWorkouts = [];
   bool _isLoadingSchedule = true;
   bool _isLoadingFriends = true;
   String? _scheduleError;
+  String? _completionError;
   String? _friendsError;
+  String? _friendActionError;
+  String? _friendActionSuccess;
+  final Set<String> _updatingScheduleIds = {};
+  final Set<String> _sendingFriendActionKeys = {};
 
   @override
   void initState() {
     super.initState();
     _loadSchedules();
     _loadFriends();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scheduleRevision != widget.scheduleRevision) {
+      setState(() {
+        _isLoadingSchedule = true;
+        _scheduleError = null;
+      });
+      _loadSchedules();
+    }
   }
 
   Future<void> _loadSchedules() async {
@@ -249,12 +297,45 @@ class _HomePageState extends State<_HomePage> {
     }
   }
 
+  Future<void> _setWorkoutCompletion(
+    WorkoutSchedule schedule,
+    bool isCompletedToday,
+  ) async {
+    if (!_updatingScheduleIds.add(schedule.id)) return;
+    setState(() => _completionError = null);
+    try {
+      final updatedSchedule = await widget.scheduleService
+          .setScheduleCompletion(
+            id: schedule.id,
+            isCompletedToday: isCompletedToday,
+          );
+      if (mounted) {
+        setState(() {
+          _schedules = _schedules
+              .map((item) => item.id == schedule.id ? updatedSchedule : item)
+              .toList();
+        });
+      }
+    } on ScheduleException catch (error) {
+      if (mounted) setState(() => _completionError = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _completionError = 'Unable to update workout completion.',
+        );
+      }
+    } finally {
+      _updatingScheduleIds.remove(schedule.id);
+      if (mounted) setState(() {});
+    }
+  }
+
   Future<void> _loadFriends() async {
     try {
-      final stats = await widget.friendsService.fetchStats(
+      final workouts = await widget.friendsService.fetchTodayWorkouts(
         currentUserId: widget.currentUserId,
       );
-      if (mounted) setState(() => _friendsStats = stats);
+      if (mounted) setState(() => _friendsWorkouts = workouts);
     } on FriendsException catch (error) {
       if (mounted) setState(() => _friendsError = error.message);
     } catch (_) {
@@ -264,16 +345,39 @@ class _HomePageState extends State<_HomePage> {
     }
   }
 
-  List<FriendDetails> get _friends {
-    final allFriends = [
-      if (_friendsStats?.highestStreakFriend != null)
-        _friendsStats!.highestStreakFriend!,
-      if (_friendsStats?.mostBuggedFriend != null)
-        _friendsStats!.mostBuggedFriend!,
-      ...?_friendsStats?.otherFriends,
-    ];
-    final seenIds = <String>{};
-    return allFriends.where((friend) => seenIds.add(friend.friendId)).toList();
+  Future<void> _sendFriendWorkoutAction(
+    FriendWorkout friend,
+    FriendWorkoutItem workout,
+    String action,
+  ) async {
+    final actionKey = '${friend.friendId}-${workout.scheduleId}';
+    if (!_sendingFriendActionKeys.add(actionKey)) return;
+    setState(() {
+      _friendActionError = null;
+      _friendActionSuccess = null;
+    });
+    try {
+      await widget.friendsService.sendWorkoutNotification(
+        friendId: friend.friendId,
+        action: action,
+      );
+      if (mounted) {
+        setState(() {
+          _friendActionSuccess = action == 'bug'
+              ? 'Workout reminder sent!'
+              : 'Congratulations sent!';
+        });
+      }
+    } on FriendsException catch (error) {
+      if (mounted) setState(() => _friendActionError = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _friendActionError = 'Unable to send notification.');
+      }
+    } finally {
+      _sendingFriendActionKeys.remove(actionKey);
+      if (mounted) setState(() {});
+    }
   }
 
   @override
@@ -290,6 +394,11 @@ class _HomePageState extends State<_HomePage> {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 12),
+        if (_completionError != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(_completionError!, style: const TextStyle(color: _red)),
+          ),
         if (_isLoadingSchedule)
           const Center(child: CircularProgressIndicator(color: _red))
         else if (_scheduleError != null)
@@ -309,6 +418,17 @@ class _HomePageState extends State<_HomePage> {
                 title: Text(
                   '${schedule.startTime} - ${schedule.endTime}, ${schedule.activity}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                trailing: Checkbox(
+                  value: schedule.isCompletedToday,
+                  activeColor: _red,
+                  onChanged: _updatingScheduleIds.contains(schedule.id)
+                      ? null
+                      : (checked) {
+                          if (checked != null) {
+                            _setWorkoutCompletion(schedule, checked);
+                          }
+                        },
                 ),
               ),
             ),
@@ -333,23 +453,84 @@ class _HomePageState extends State<_HomePage> {
           const Center(child: CircularProgressIndicator(color: _red))
         else if (_friendsError != null)
           Text(_friendsError!, style: const TextStyle(color: _red))
-        else if (_friends.isEmpty)
-          const Text('No bros yet.')
+        else if (_friendsWorkouts.isEmpty)
+          const Text('None of your bros have workouts scheduled today.')
         else
-          for (final friend in _friends)
-            Card(
-              color: Colors.white,
-              elevation: 0,
-              child: ListTile(
-                title: Text(
-                  friend.username,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  '${friend.streakCount} day streak · ${friend.bugCount} bugs',
-                ),
+          for (final friend in _friendsWorkouts)
+            for (final workout in friend.workouts)
+              Builder(
+                builder: (context) {
+                  final status = _friendWorkoutStatus(workout);
+                  final isCompleted = status == _FriendWorkoutStatus.completed;
+                  final isOverdue = status == _FriendWorkoutStatus.overdue;
+                  final actionKey = '${friend.friendId}-${workout.scheduleId}';
+                  return Card(
+                    color: isCompleted
+                        ? _completedFill
+                        : isOverdue
+                        ? _overdueFill
+                        : _upcomingFill,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: isCompleted
+                            ? _green
+                            : isOverdue
+                            ? _red
+                            : _yellow,
+                        width: 2,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${friend.username}: ${workout.startTime} - ${workout.endTime}, ${workout.activity}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: isCompleted
+                                ? 'Congratulate ${friend.username}'
+                                : 'Bug ${friend.username}',
+                            onPressed: _sendingFriendActionKeys.contains(
+                                  actionKey,
+                                )
+                                ? null
+                                : () => _sendFriendWorkoutAction(
+                                    friend,
+                                    workout,
+                                    isCompleted ? 'congratulate' : 'bug',
+                                  ),
+                            icon: _sendingFriendActionKeys.contains(actionKey)
+                                ? const SizedBox.square(
+                                    dimension: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    isCompleted
+                                        ? Icons.celebration_outlined
+                                        : Icons.bug_report_outlined,
+                                    color: isCompleted ? _green : _red,
+                                    size: 32,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
+        if (_friendActionError != null)
+          Text(_friendActionError!, style: const TextStyle(color: _red)),
+        if (_friendActionSuccess != null) Text(_friendActionSuccess!),
       ],
     );
   }
@@ -375,8 +556,10 @@ class _FriendsPageState extends State<_FriendsPage> {
   final Set<String> _friendIds = {};
   final Set<String> _addingFriendIds = {};
   final Set<String> _deletingFriendIds = {};
+  final Set<String> _buggingFriendIds = {};
   final Map<String, String> _addErrors = {};
   final Map<String, String> _deleteErrors = {};
+  final Map<String, String> _bugErrors = {};
   bool _isSearching = false;
   bool _isLoadingFriends = true;
   bool _friendsLoadFailed = false;
@@ -527,6 +710,28 @@ class _FriendsPageState extends State<_FriendsPage> {
       if (mounted) {
         setState(() => _deletingFriendIds.remove(friend.friendId));
       }
+    }
+  }
+
+  Future<void> _bugFriend(FriendDetails friend) async {
+    final friendId = friend.friendId;
+    if (!_buggingFriendIds.add(friendId)) return;
+    setState(() => _bugErrors.remove(friendId));
+
+    try {
+      await widget.friendsService.sendWorkoutNotification(
+        friendId: friendId,
+        action: 'bug',
+      );
+    } on FriendsException catch (error) {
+      if (mounted) setState(() => _bugErrors[friendId] = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _bugErrors[friendId] = 'Unable to send bug notification.');
+      }
+    } finally {
+      _buggingFriendIds.remove(friendId);
+      if (mounted) setState(() {});
     }
   }
 
@@ -692,8 +897,11 @@ class _FriendsPageState extends State<_FriendsPage> {
               friends: [?_friendsStats?.mostBuggedFriend],
               emptyMessage: 'No best bro yet.',
               deletingFriendIds: _deletingFriendIds,
+              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
+              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
+              onBug: _bugFriend,
             ),
             _FriendSection(
               title: 'Streak Bro',
@@ -701,16 +909,22 @@ class _FriendsPageState extends State<_FriendsPage> {
               friends: [?_friendsStats?.highestStreakFriend],
               emptyMessage: 'No streak bro yet.',
               deletingFriendIds: _deletingFriendIds,
+              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
+              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
+              onBug: _bugFriend,
             ),
             _FriendSection(
               title: 'Regular Bros',
               friends: _friendsStats?.otherFriends ?? const [],
               emptyMessage: 'No regular bros yet.',
               deletingFriendIds: _deletingFriendIds,
+              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
+              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
+              onBug: _bugFriend,
             ),
           ],
         ],
@@ -725,8 +939,11 @@ class _FriendSection extends StatelessWidget {
     required this.friends,
     required this.emptyMessage,
     required this.deletingFriendIds,
+    required this.buggingFriendIds,
     required this.deleteErrors,
+    required this.bugErrors,
     required this.onDelete,
+    required this.onBug,
     this.subtitle,
   });
 
@@ -735,8 +952,11 @@ class _FriendSection extends StatelessWidget {
   final List<FriendDetails> friends;
   final String emptyMessage;
   final Set<String> deletingFriendIds;
+  final Set<String> buggingFriendIds;
   final Map<String, String> deleteErrors;
+  final Map<String, String> bugErrors;
   final ValueChanged<FriendDetails> onDelete;
+  final ValueChanged<FriendDetails> onBug;
 
   @override
   Widget build(BuildContext context) {
@@ -765,8 +985,11 @@ class _FriendSection extends StatelessWidget {
               _FriendStatRow(
                 friend: friend,
                 isDeleting: deletingFriendIds.contains(friend.friendId),
+                isBugging: buggingFriendIds.contains(friend.friendId),
                 error: deleteErrors[friend.friendId],
+                bugError: bugErrors[friend.friendId],
                 onDelete: () => onDelete(friend),
+                onBug: () => onBug(friend),
               ),
         ],
       ),
@@ -778,14 +1001,20 @@ class _FriendStatRow extends StatelessWidget {
   const _FriendStatRow({
     required this.friend,
     required this.isDeleting,
+    required this.isBugging,
     required this.onDelete,
+    required this.onBug,
     this.error,
+    this.bugError,
   });
 
   final FriendDetails friend;
   final bool isDeleting;
+  final bool isBugging;
   final String? error;
+  final String? bugError;
   final VoidCallback onDelete;
+  final VoidCallback onBug;
 
   @override
   Widget build(BuildContext context) {
@@ -802,7 +1031,16 @@ class _FriendStatRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.bug_report_outlined, color: _red, size: 20),
+              IconButton(
+                tooltip: 'Bug ${friend.username}',
+                onPressed: isBugging || isDeleting ? null : onBug,
+                icon: isBugging
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.bug_report_outlined, color: _red),
+              ),
               if (isDeleting)
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
@@ -833,6 +1071,14 @@ class _FriendStatRow extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 error!,
+                style: const TextStyle(color: _red, fontSize: 12),
+              ),
+            ),
+          if (bugError != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                bugError!,
                 style: const TextStyle(color: _red, fontSize: 12),
               ),
             ),
@@ -879,12 +1125,14 @@ class _ProfilePage extends StatefulWidget {
     required this.user,
     required this.authService,
     required this.scheduleService,
+    required this.onScheduleChanged,
     required this.onLogOut,
   });
 
   final AuthUser user;
   final AuthService authService;
   final ScheduleService scheduleService;
+  final VoidCallback onScheduleChanged;
   final VoidCallback onLogOut;
 
   @override
@@ -933,7 +1181,10 @@ class _ProfilePageState extends State<_ProfilePage> {
         ),
       ),
     );
-    if (saved == true) await _loadSchedules();
+    if (saved == true) {
+      widget.onScheduleChanged();
+      await _loadSchedules();
+    }
   }
 
   Future<void> _editProfile() async {

@@ -170,7 +170,6 @@ class _GymBrosAppState extends State<GymBrosApp> {
           : HomeScreen(
               user: _user!,
               onLogOut: _logOut,
-              notificationService: widget.notificationService,
               authService: widget.authService,
               scheduleService: widget.scheduleService,
               friendsService: widget.friendsService,

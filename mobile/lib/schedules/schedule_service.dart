@@ -12,6 +12,7 @@ class WorkoutSchedule {
     required this.startTime,
     required this.endTime,
     required this.activity,
+    required this.isCompletedToday,
   });
 
   final String id;
@@ -19,6 +20,7 @@ class WorkoutSchedule {
   final String startTime;
   final String endTime;
   final String activity;
+  final bool isCompletedToday;
 
   factory WorkoutSchedule.fromJson(Map<String, dynamic> json) {
     final id = json['_id'];
@@ -26,11 +28,13 @@ class WorkoutSchedule {
     final startTime = json['startTime'];
     final endTime = json['endTime'];
     final activity = json['activity'];
+    final isCompletedToday = json['isCompletedToday'];
     if (id is! String ||
         dayOfWeek is! String ||
         startTime is! String ||
         endTime is! String ||
-        activity is! String) {
+        activity is! String ||
+        isCompletedToday is! bool) {
       throw const ScheduleException('The server returned an invalid schedule.');
     }
     return WorkoutSchedule(
@@ -39,6 +43,7 @@ class WorkoutSchedule {
       startTime: startTime,
       endTime: endTime,
       activity: activity,
+      isCompletedToday: isCompletedToday,
     );
   }
 }
@@ -134,6 +139,18 @@ class ScheduleService {
 
   Future<void> deleteSchedule(String id) async {
     await _request(Uri.encodeComponent(id), method: 'DELETE');
+  }
+
+  Future<WorkoutSchedule> setScheduleCompletion({
+    required String id,
+    required bool isCompletedToday,
+  }) async {
+    final payload = await _request(
+      '${Uri.encodeComponent(id)}/completion',
+      method: 'PATCH',
+      body: {'isCompletedToday': isCompletedToday},
+    );
+    return WorkoutSchedule.fromJson(_asJsonMap(payload));
   }
 
   Future<Object?> _request(

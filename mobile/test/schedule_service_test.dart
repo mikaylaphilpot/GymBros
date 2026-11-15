@@ -17,12 +17,16 @@ class _TokenStore implements TokenStore {
   Future<void> write(String token) async {}
 }
 
-Map<String, Object?> _scheduleJson({String id = 'schedule-id'}) => {
+Map<String, Object?> _scheduleJson({
+  String id = 'schedule-id',
+  bool isCompletedToday = false,
+}) => {
   '_id': id,
   'dayOfWeek': 'Monday',
   'startTime': '9:00 AM',
   'endTime': '10:00 AM',
   'activity': 'Tennis',
+  'isCompletedToday': isCompletedToday,
 };
 
 void main() {
@@ -40,6 +44,12 @@ void main() {
           return http.Response(jsonEncode(_scheduleJson()), 201);
         }
         if (request.method == 'PATCH') {
+          if (request.url.path.endsWith('/completion')) {
+            return http.Response(
+              jsonEncode(_scheduleJson(isCompletedToday: true)),
+              200,
+            );
+          }
           return http.Response(jsonEncode(_scheduleJson()), 200);
         }
         return http.Response(
@@ -69,11 +79,18 @@ void main() {
     );
     expect(updated.activity, 'Tennis');
 
+    final completed = await service.setScheduleCompletion(
+      id: 'schedule-id',
+      isCompletedToday: true,
+    );
+    expect(completed.isCompletedToday, isTrue);
+
     await service.deleteSchedule('schedule-id');
 
     expect(requests.map((request) => request.method), [
       'GET',
       'POST',
+      'PATCH',
       'PATCH',
       'DELETE',
     ]);
@@ -81,7 +98,8 @@ void main() {
       requests.every(
         (request) =>
             request.url.path == '/api/schedules/' ||
-            request.url.path == '/api/schedules/schedule-id',
+            request.url.path == '/api/schedules/schedule-id' ||
+            request.url.path == '/api/schedules/schedule-id/completion',
       ),
       isTrue,
     );
@@ -97,5 +115,7 @@ void main() {
       'endTime': '10:00 AM',
       'activity': 'Tennis',
     });
+    expect(requests[3].url.path, '/api/schedules/schedule-id/completion');
+    expect(jsonDecode(requests[3].body), {'isCompletedToday': true});
   });
 }

@@ -103,6 +103,95 @@ class FriendsStats {
   }
 }
 
+class FriendWorkout {
+  const FriendWorkout({
+    required this.friendId,
+    required this.username,
+    required this.streakCount,
+    required this.bugCount,
+    required this.lastBuggedAt,
+    required this.workouts,
+  });
+
+  final String friendId;
+  final String username;
+  final int streakCount;
+  final int bugCount;
+  final DateTime? lastBuggedAt;
+  final List<FriendWorkoutItem> workouts;
+
+  factory FriendWorkout.fromJson(Map<String, dynamic> json) {
+    final friendId = json['friendId'];
+    final username = json['username'];
+    final streakCount = json['streakCount'];
+    final bugCount = json['bugCount'];
+    final lastBuggedAt = json['lastBuggedAt'];
+    final workouts = json['workouts'];
+    if (friendId is! String ||
+        username is! String ||
+        streakCount is! int ||
+        bugCount is! int ||
+        (lastBuggedAt != null && lastBuggedAt is! String) ||
+        workouts is! List) {
+      throw const FriendsException(
+        'The server returned invalid friend workout data.',
+      );
+    }
+    return FriendWorkout(
+      friendId: friendId,
+      username: username,
+      streakCount: streakCount,
+      bugCount: bugCount,
+      lastBuggedAt: lastBuggedAt == null
+          ? null
+          : DateTime.tryParse(lastBuggedAt as String),
+      workouts: workouts
+          .map((workout) => FriendWorkoutItem.fromJson(_asJsonMap(workout)))
+          .toList(),
+    );
+  }
+}
+
+class FriendWorkoutItem {
+  const FriendWorkoutItem({
+    required this.scheduleId,
+    required this.activity,
+    required this.startTime,
+    required this.endTime,
+    required this.isCompletedToday,
+  });
+
+  final String scheduleId;
+  final String activity;
+  final String startTime;
+  final String endTime;
+  final bool isCompletedToday;
+
+  factory FriendWorkoutItem.fromJson(Map<String, dynamic> json) {
+    final scheduleId = json['scheduleId'];
+    final activity = json['activity'];
+    final startTime = json['startTime'];
+    final endTime = json['endTime'];
+    final isCompletedToday = json['isCompletedToday'];
+    if (scheduleId is! String ||
+        activity is! String ||
+        startTime is! String ||
+        endTime is! String ||
+        isCompletedToday is! bool) {
+      throw const FriendsException(
+        'The server returned invalid friend workout data.',
+      );
+    }
+    return FriendWorkoutItem(
+      scheduleId: scheduleId,
+      activity: activity,
+      startTime: startTime,
+      endTime: endTime,
+      isCompletedToday: isCompletedToday,
+    );
+  }
+}
+
 class SearchUser {
   const SearchUser({
     required this.id,
@@ -216,6 +305,36 @@ class FriendsService {
     final path = 'users/${Uri.encodeComponent(currentUserId)}/friends/stats';
     final response = await _request(path, method: 'GET');
     return FriendsStats.fromJson(_asJsonMap(response));
+  }
+
+  Future<List<FriendWorkout>> fetchTodayWorkouts({
+    required String currentUserId,
+  }) async {
+    final path =
+        'users/${Uri.encodeComponent(currentUserId)}/friends/workouts/today';
+    final response = await _request(path, method: 'GET');
+    if (response is! List) {
+      throw const FriendsException(
+        'The server returned invalid friend workout data.',
+      );
+    }
+    return response
+        .map((friend) => FriendWorkout.fromJson(_asJsonMap(friend)))
+        .toList();
+  }
+
+  Future<void> sendWorkoutNotification({
+    required String friendId,
+    required String action,
+  }) async {
+    if (action != 'bug' && action != 'congratulate') {
+      throw ArgumentError.value(action, 'action');
+    }
+    await _request(
+      'notifications/friends/${Uri.encodeComponent(friendId)}/$action',
+      method: 'POST',
+      acceptedStatuses: {201},
+    );
   }
 
   Future<List<SearchUser>> searchUsers(String query) async {
