@@ -99,10 +99,10 @@ This project was developed with assistance from generative AI tools:
 - **Scope**: API implementation for home, profile, forgot password
 - **Use**: Used ChatGPT to help implement the APIs needed to load user information onto the profile and home pages, set up password reset functionality, store and display user and bro workouts, and set up notifications to "bug" other users.
 
-- **Tool**: 
-- **Dates**: 
-- **Scope**: 
-- **Use**:
+- **Tool**: Copilot
+- **Dates**: Oct 22-30
+- **Scope**: Initial database setup
+- **Use**: Used Copilot to set up and debug database for user and schedule data management.
 
 - **Tool**: 
 - **Dates**: 
