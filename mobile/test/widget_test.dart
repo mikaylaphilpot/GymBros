@@ -533,7 +533,7 @@ void main() {
                 'startTime': '9:00 AM',
                 'endTime': '10:00 AM',
                 'activity': activity,
-                  'isCompletedToday': false,
+                'isCompletedToday': false,
               },
             ]),
             200,
@@ -542,14 +542,14 @@ void main() {
         if (request.method == 'PATCH') {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           activity = body['activity'] as String;
-            return http.Response(
-              jsonEncode({
-                '_id': 'schedule-id',
-                ...body,
-                'isCompletedToday': false,
-              }),
-              200,
-            );
+          return http.Response(
+            jsonEncode({
+              '_id': 'schedule-id',
+              ...body,
+              'isCompletedToday': false,
+            }),
+            200,
+          );
         }
         return http.Response('{}', 404);
       }),
@@ -585,6 +585,12 @@ void main() {
 
     await tester.tap(find.widgetWithText(TextButton, 'Edit').first);
     await tester.pumpAndSettle();
+    expect(
+      Theme.of(tester.element(find.byType(TextFormField).first))
+          .inputDecorationTheme
+          .fillColor,
+      const Color(0xFFD9D9D9),
+    );
     await tester.enterText(find.byType(TextFormField).at(2), 'Swimming');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -612,6 +618,12 @@ void main() {
     await tester.ensureVisible(find.text('User Information'));
     await tester.tap(find.widgetWithText(TextButton, 'Edit').last);
     await tester.pumpAndSettle();
+    expect(
+      Theme.of(tester.element(find.byType(TextFormField).first))
+          .inputDecorationTheme
+          .fillColor,
+      const Color(0xFFD9D9D9),
+    );
     await tester.enterText(find.byType(TextFormField).at(0), 'Jane Gymbro');
     await tester.enterText(find.byType(TextFormField).at(2), 'Password1!');
     await tester.tap(find.text('Save'));

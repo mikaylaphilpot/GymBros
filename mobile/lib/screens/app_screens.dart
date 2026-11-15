@@ -18,8 +18,10 @@ enum _FriendWorkoutStatus { completed, overdue, upcoming }
 _FriendWorkoutStatus _friendWorkoutStatus(FriendWorkoutItem workout) {
   if (workout.isCompletedToday) return _FriendWorkoutStatus.completed;
 
-  final match = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)$', caseSensitive: false)
-    .firstMatch(workout.endTime.trim());
+  final match = RegExp(
+    r'^(\d{1,2}):(\d{2})\s*(AM|PM)$',
+    caseSensitive: false,
+  ).firstMatch(workout.endTime.trim());
   if (match == null) return _FriendWorkoutStatus.upcoming;
 
   var hours = int.parse(match.group(1)!);
@@ -31,8 +33,8 @@ _FriendWorkoutStatus _friendWorkoutStatus(FriendWorkoutItem workout) {
   final now = DateTime.now();
   final currentMinutes = now.hour * 60 + now.minute;
   return currentMinutes >= endMinutes
-    ? _FriendWorkoutStatus.overdue
-    : _FriendWorkoutStatus.upcoming;
+      ? _FriendWorkoutStatus.overdue
+      : _FriendWorkoutStatus.upcoming;
 }
 
 ThemeData _screenTheme(BuildContext context) {
@@ -498,9 +500,8 @@ class _HomePageState extends State<_HomePage> {
                             tooltip: isCompleted
                                 ? 'Congratulate ${friend.username}'
                                 : 'Bug ${friend.username}',
-                            onPressed: _sendingFriendActionKeys.contains(
-                                  actionKey,
-                                )
+                            onPressed:
+                                _sendingFriendActionKeys.contains(actionKey)
                                 ? null
                                 : () => _sendFriendWorkoutAction(
                                     friend,
@@ -727,7 +728,9 @@ class _FriendsPageState extends State<_FriendsPage> {
       if (mounted) setState(() => _bugErrors[friendId] = error.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _bugErrors[friendId] = 'Unable to send bug notification.');
+        setState(
+          () => _bugErrors[friendId] = 'Unable to send bug notification.',
+        );
       }
     } finally {
       _buggingFriendIds.remove(friendId);
@@ -1341,87 +1344,92 @@ class _EditUserInfoPageState extends State<_EditUserInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: _screenTitle('Edit User Information')),
-      body: _ContentPanel(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter your name.'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'Username'),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter your username.'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _emailController,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      helperText: 'Email cannot be changed here.',
+    return Theme(
+      data: _screenTheme(context),
+      child: Scaffold(
+        appBar: AppBar(title: _screenTitle('Edit User Information')),
+        body: _ContentPanel(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Enter your name.'
+                          : null,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _currentPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Current password',
-                    ),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Enter your current password to save changes.'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'New password (optional)',
-                    ),
-                  ),
-                  if (_errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: _red),
+                    TextFormField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(labelText: 'Username'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Enter your username.'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _emailController,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        helperText: 'Email cannot be changed here.',
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _currentPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Current password',
+                      ),
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Enter your current password to save changes.'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'New password (optional)',
+                      ),
+                    ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: _red),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSaving ? null : _save,
+                      style: FilledButton.styleFrom(backgroundColor: _red),
+                      child: _isSaving
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Save'),
+                    ),
                   ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _isSaving ? null : _save,
-                    style: FilledButton.styleFrom(backgroundColor: _red),
-                    child: _isSaving
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Save'),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1560,59 +1568,62 @@ class _EditSchedulePageState extends State<_EditSchedulePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: _screenTitle('Edit Schedule')),
-      body: _ContentPanel(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const Text('Edit your workout days and activities.'),
-            const SizedBox(height: 16),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  for (final draft in _drafts)
-                    _ScheduleDraftFields(
-                      draft: draft,
-                      days: _days,
-                      enabled: !_isSaving,
-                      onDelete: () => _removeDraft(draft),
-                    ),
-                ],
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _isSaving ? null : _addDraft,
-                icon: const Icon(Icons.add),
-                label: const Text('Add workout'),
-              ),
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: _red),
+    return Theme(
+      data: _screenTheme(context),
+      child: Scaffold(
+        appBar: AppBar(title: _screenTitle('Edit Schedule')),
+        body: _ContentPanel(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Text('Edit your workout days and activities.'),
+              const SizedBox(height: 16),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    for (final draft in _drafts)
+                      _ScheduleDraftFields(
+                        draft: draft,
+                        days: _days,
+                        enabled: !_isSaving,
+                        onDelete: () => _removeDraft(draft),
+                      ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _isSaving ? null : _save,
-              style: FilledButton.styleFrom(backgroundColor: _red),
-              child: _isSaving
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Save'),
-            ),
-          ],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _isSaving ? null : _addDraft,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add workout'),
+                ),
+              ),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: _red),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _isSaving ? null : _save,
+                style: FilledButton.styleFrom(backgroundColor: _red),
+                child: _isSaving
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );
