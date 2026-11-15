@@ -556,9 +556,7 @@ class _FriendsPageState extends State<_FriendsPage> {
   FriendsStats? _friendsStats;
   final Set<String> _friendIds = {};
   final Set<String> _deletingFriendIds = {};
-  final Set<String> _buggingFriendIds = {};
   final Map<String, String> _deleteErrors = {};
-  final Map<String, String> _bugErrors = {};
   bool _isSearching = false;
   bool _isLoadingFriends = true;
   bool _friendsLoadFailed = false;
@@ -712,30 +710,6 @@ class _FriendsPageState extends State<_FriendsPage> {
     }
   }
 
-  Future<void> _bugFriend(FriendDetails friend) async {
-    final friendId = friend.friendId;
-    if (!_buggingFriendIds.add(friendId)) return;
-    setState(() => _bugErrors.remove(friendId));
-
-    try {
-      await widget.friendsService.sendWorkoutNotification(
-        friendId: friendId,
-        action: 'bug',
-      );
-    } on FriendsException catch (error) {
-      if (mounted) setState(() => _bugErrors[friendId] = error.message);
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => _bugErrors[friendId] = 'Unable to send bug notification.',
-        );
-      }
-    } finally {
-      _buggingFriendIds.remove(friendId);
-      if (mounted) setState(() {});
-    }
-  }
-
   Future<void> _addFriend(SearchUser user) async {
     await widget.friendsService.addFriend(
       currentUserId: widget.currentUserId,
@@ -849,11 +823,8 @@ class _FriendsPageState extends State<_FriendsPage> {
                       email: user.email,
                       infoLeftInset: 8,
                       isDeleting: _deletingFriendIds.contains(friend.friendId),
-                      isBugging: _buggingFriendIds.contains(friend.friendId),
                       error: _deleteErrors[friend.friendId],
-                      bugError: _bugErrors[friend.friendId],
                       onDelete: () => _deleteFriend(friend),
-                      onBug: () => _bugFriend(friend),
                     ),
                   );
                 },
@@ -876,11 +847,8 @@ class _FriendsPageState extends State<_FriendsPage> {
               friends: [?_friendsStats?.mostBuggedFriend],
               emptyMessage: 'No best bro yet.',
               deletingFriendIds: _deletingFriendIds,
-              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
-              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
-              onBug: _bugFriend,
             ),
             _FriendSection(
               title: 'Streak Bro',
@@ -888,22 +856,16 @@ class _FriendsPageState extends State<_FriendsPage> {
               friends: [?_friendsStats?.highestStreakFriend],
               emptyMessage: 'No streak bro yet.',
               deletingFriendIds: _deletingFriendIds,
-              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
-              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
-              onBug: _bugFriend,
             ),
             _FriendSection(
               title: 'Regular Bros',
               friends: _friendsStats?.otherFriends ?? const [],
               emptyMessage: 'No regular bros yet.',
               deletingFriendIds: _deletingFriendIds,
-              buggingFriendIds: _buggingFriendIds,
               deleteErrors: _deleteErrors,
-              bugErrors: _bugErrors,
               onDelete: _deleteFriend,
-              onBug: _bugFriend,
             ),
           ],
         ],
@@ -918,11 +880,8 @@ class _FriendSection extends StatelessWidget {
     required this.friends,
     required this.emptyMessage,
     required this.deletingFriendIds,
-    required this.buggingFriendIds,
     required this.deleteErrors,
-    required this.bugErrors,
     required this.onDelete,
-    required this.onBug,
     this.subtitle,
   });
 
@@ -931,11 +890,8 @@ class _FriendSection extends StatelessWidget {
   final List<FriendDetails> friends;
   final String emptyMessage;
   final Set<String> deletingFriendIds;
-  final Set<String> buggingFriendIds;
   final Map<String, String> deleteErrors;
-  final Map<String, String> bugErrors;
   final ValueChanged<FriendDetails> onDelete;
-  final ValueChanged<FriendDetails> onBug;
 
   @override
   Widget build(BuildContext context) {
@@ -964,11 +920,8 @@ class _FriendSection extends StatelessWidget {
               _FriendStatRow(
                 friend: friend,
                 isDeleting: deletingFriendIds.contains(friend.friendId),
-                isBugging: buggingFriendIds.contains(friend.friendId),
                 error: deleteErrors[friend.friendId],
-                bugError: bugErrors[friend.friendId],
                 onDelete: () => onDelete(friend),
-                onBug: () => onBug(friend),
               ),
         ],
       ),
@@ -980,24 +933,18 @@ class _FriendStatRow extends StatelessWidget {
   const _FriendStatRow({
     required this.friend,
     required this.isDeleting,
-    required this.isBugging,
     required this.onDelete,
-    required this.onBug,
     this.email,
     this.infoLeftInset = 0,
     this.error,
-    this.bugError,
   });
 
   final FriendDetails friend;
   final bool isDeleting;
-  final bool isBugging;
   final String? email;
   final double infoLeftInset;
   final String? error;
-  final String? bugError;
   final VoidCallback onDelete;
-  final VoidCallback onBug;
 
   @override
   Widget build(BuildContext context) {
@@ -1030,17 +977,6 @@ class _FriendStatRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Bug ${friend.username}',
-                onPressed: isBugging || isDeleting ? null : onBug,
-                icon: isBugging
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.bug_report_outlined, color: _red),
-              ),
               if (isDeleting)
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
@@ -1071,14 +1007,6 @@ class _FriendStatRow extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 error!,
-                style: const TextStyle(color: _red, fontSize: 12),
-              ),
-            ),
-          if (bugError != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                bugError!,
                 style: const TextStyle(color: _red, fontSize: 12),
               ),
             ),

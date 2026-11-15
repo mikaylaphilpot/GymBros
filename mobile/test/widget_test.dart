@@ -429,17 +429,7 @@ void main() {
     expect(find.text('7 day streak · 1 bugs'), findsOneWidget);
     expect(find.text('Regular Bros'), findsOneWidget);
     expect(find.text('AlreadyBro'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Bug BestBro'));
-    await tester.pumpAndSettle();
-    expect(
-      requests.any(
-        (request) =>
-            request.method == 'POST' &&
-            request.url.path.endsWith('/friends/bugged-friend/bug'),
-      ),
-      isTrue,
-    );
+    expect(find.byTooltip('Bug BestBro'), findsNothing);
 
     final searchField = find.byType(TextField).first;
     for (final query in ['B', 'Br', 'Bro']) {
@@ -455,19 +445,9 @@ void main() {
     expect(find.text('BroThree'), findsOneWidget);
     expect(find.text('BroFour'), findsNothing);
     expect(find.byIcon(Icons.add), findsNothing);
-    expect(find.byTooltip('Bug AlreadyBro'), findsOneWidget);
+    expect(find.byTooltip('Bug AlreadyBro'), findsNothing);
+    expect(find.byIcon(Icons.bug_report_outlined), findsNothing);
     expect(find.byTooltip('Bro options'), findsNWidgets(3));
-
-    await tester.tap(find.byTooltip('Bug AlreadyBro'));
-    await tester.pumpAndSettle();
-    expect(
-      requests.any(
-        (request) =>
-            request.method == 'POST' &&
-            request.url.path.endsWith('/friends/existing-friend/bug'),
-      ),
-      isTrue,
-    );
 
     await tester.tap(find.byTooltip('Bro options').first);
     await tester.pumpAndSettle();
