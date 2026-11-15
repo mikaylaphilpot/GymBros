@@ -66,6 +66,7 @@ void main() {
     expect(find.text('Welcome Back Bro!'), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Not a Bro? Create Account'));
     await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
@@ -89,6 +90,7 @@ void main() {
     );
     await tester.pumpWidget(GymBrosApp(authService: service));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Not a Bro? Create Account'));
     await tester.tap(find.text('Not a Bro? Create Account'));
     await tester.pumpAndSettle();
 
