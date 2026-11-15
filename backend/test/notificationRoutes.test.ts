@@ -1,24 +1,27 @@
-import assert from "node:assert/strict";
-import http from "node:http";
+import { afterAll, beforeAll, expect, jest, test } from "@jest/globals";
 import express from "express";
-import { test } from "node:test";
+import {
+  createInMemoryNotificationStore,
+} from "../models/notification";
 import {
   createInMemoryPushSubscriptionStore,
   type PushSubscription,
-} from "../models/pushSubscription.js";
-import { createInMemoryNotificationStore } from "../models/notification.js";
-import type { NotificationStore } from "../models/notification.js";
-import type { DeviceTokenStore } from "../models/deviceToken.js";
-import type { NativePushSender } from "../services/firebaseNotifications.js";
-import { createNotificationRouter } from "../routes/notificationRoutes.js";
+} from "../models/pushSubscription";
+import type { DeviceTokenStore } from "../models/deviceToken";
+import type { NativePushSender } from "../services/firebaseNotifications";
+import { createNotificationRouter } from "../routes/notificationRoutes";
+import { request } from "./http";
 
-process.env.ALLOW_DEV_USER_HEADER = "true";
+const subscription: PushSubscription = {
+  endpoint: "https://fcm.googleapis.com/fcm/send/test-subscription",
+  keys: { p256dh: "public-key", auth: "auth-key" },
+};
+const originalDevHeader = process.env.ALLOW_DEV_USER_HEADER;
 
-function createTestServer(
-  sendNotification: (subscription: PushSubscription, payload: string) => Promise<void> = async () => undefined,
-  nativePushSender?: NativePushSender,
-) {
-  const app = express();
+function createTestApp(options: {
+  sendNotification?: (subscription: PushSubscription, payload: string) => Promise<void>;
+  nativePushSender?: NativePushSender;
+} = {}) {
   const store = createInMemoryPushSubscriptionStore();
   const notificationStore = createInMemoryNotificationStore();
   const deviceTokens: Array<{ userId: string; token: string; platform: string }> = [];
@@ -30,243 +33,162 @@ function createTestServer(
       deviceTokens.push({ userId, token, platform });
     },
     async delete(userId, token) {
-      const index = deviceTokens.findIndex(
-        (entry) => entry.userId === userId && entry.token === token,
-      );
+      const index = deviceTokens.findIndex((entry) => entry.userId === userId && entry.token === token);
       if (index >= 0) deviceTokens.splice(index, 1);
     },
     async list(userId) {
-      return deviceTokens
-        .filter((entry) => entry.userId === userId)
-        .map((entry) => entry.token);
+      return deviceTokens.filter((entry) => entry.userId === userId).map((entry) => entry.token);
     },
   };
+  const app = express();
   app.use(express.json());
   app.use("/api/notifications", createNotificationRouter({
     store,
     notificationStore,
     deviceTokenStore,
-    nativePushSender,
-    pushClient: { sendNotification },
+    nativePushSender: options.nativePushSender,
+    pushClient: { sendNotification: options.sendNotification ?? (async () => undefined) },
     allowDevTest: true,
   }));
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const message = error instanceof Error ? error.message : "Unexpected error";
-    res.status(500).json({ message });
+    res.status(500).json({ message: error instanceof Error ? error.message : "Unexpected error" });
   });
-  const server = http.createServer(app);
-  return { server, store, notificationStore, deviceTokens };
+  return { app, store, deviceTokens };
 }
 
-async function request(
-  server: http.Server,
-  path: string,
-  options: RequestInit = {},
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const address = await new Promise<{ port: number }>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, () => {
-      const currentAddress = server.address();
-      if (!currentAddress || typeof currentAddress === "string") {
-        reject(new Error("Test server did not expose a TCP address"));
-        return;
-      }
-      resolve({ port: currentAddress.port });
-    });
-  });
-
-  try {
-    const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
-      ...options,
-      headers: { "content-type": "application/json", ...(options.headers ?? {}) },
-    });
-    const text = await response.text();
-    return {
-      status: response.status,
-      body: text ? (JSON.parse(text) as Record<string, unknown>) : {},
-    };
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    });
-  }
+function jsonOptions(userId: string, body: unknown, method = "POST") {
+  return {
+    method,
+    headers: { "content-type": "application/json", "x-user-id": userId },
+    body: JSON.stringify(body),
+  };
 }
 
-const subscription: PushSubscription = {
-  endpoint: "https://fcm.googleapis.com/fcm/send/test-subscription",
-  keys: { p256dh: "public-key", auth: "auth-key" },
-};
-
-test("requires authentication and validates subscriptions", async () => {
-  const unauthenticated = await request(
-    createTestServer().server,
-    "/api/notifications/subscribe",
-    { method: "POST", body: JSON.stringify({ subscription }) },
-  );
-  assert.equal(unauthenticated.status, 401);
-
-  const invalid = await request(
-    createTestServer().server,
-    "/api/notifications/subscribe",
-    {
-      method: "POST",
-      headers: { "x-user-id": "user-1" },
-      body: JSON.stringify({ subscription: {} }),
-    },
-  );
-  assert.equal(invalid.status, 400);
+beforeAll(() => {
+  process.env.ALLOW_DEV_USER_HEADER = "true";
 });
 
-test("saves a subscription and sends a notification", async () => {
-  let sentPayload: Record<string, unknown> | undefined;
-  const server = createTestServer(async (_subscription, payload) => {
-    sentPayload = JSON.parse(payload) as Record<string, unknown>;
-  });
-  const saved = await request(server.server, "/api/notifications/subscribe", {
+afterAll(() => {
+  if (originalDevHeader === undefined) delete process.env.ALLOW_DEV_USER_HEADER;
+  else process.env.ALLOW_DEV_USER_HEADER = originalDevHeader;
+});
+
+test("requires authentication and validates browser subscriptions", async () => {
+  const setup = createTestApp();
+  const unauthenticated = await request(setup.app, "/api/notifications/subscribe", {
     method: "POST",
-    headers: { "x-user-id": "user-2" },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ subscription }),
   });
-  assert.equal(saved.status, 201);
+  expect(unauthenticated.status).toBe(401);
 
-  const sendServer = createTestServer(async (_subscription, payload) => {
-    sentPayload = JSON.parse(payload) as Record<string, unknown>;
-  });
-  await sendServer.store.save("user-2", subscription);
-  const sent = await request(sendServer.server, "/api/notifications/send", {
-    method: "POST",
-    headers: { "x-user-id": "sender-1" },
-    body: JSON.stringify({ targetUserId: "user-2", messageText: "Time to train!" }),
-  });
-  assert.equal(sent.status, 200);
-  assert.deepEqual(sentPayload, {
-    title: "GymBros Notification",
-    body: "Time to train!",
-    url: "/",
-  });
+  const invalid = await request(setup.app, "/api/notifications/subscribe", jsonOptions("user-1", { subscription: {} }));
+  expect(invalid.status).toBe(400);
 });
 
-test("removes expired subscriptions", async () => {
-  const server = createTestServer(async () => {
-    const error = Object.assign(new Error("expired"), { statusCode: 410 });
-    throw error;
-  });
-  await server.store.save("user-3", subscription);
-  const result = await request(server.server, "/api/notifications/send", {
-    method: "POST",
-    headers: { "x-user-id": "sender-1" },
-    body: JSON.stringify({ targetUserId: "user-3", messageText: "Hello" }),
-  });
-  assert.equal(result.status, 410);
-  assert.equal(await server.store.findByUserId("user-3"), null);
-});
-
-test("sends a test notification to the authenticated user", async () => {
+test("subscribes a browser and delivers a push notification", async () => {
   let sentPayload: Record<string, unknown> | undefined;
-  const server = createTestServer(async (_subscription, payload) => {
-    sentPayload = JSON.parse(payload) as Record<string, unknown>;
+  const setup = createTestApp({
+    sendNotification: async (_subscription, payload) => {
+      sentPayload = JSON.parse(payload) as Record<string, unknown>;
+    },
   });
+  const saved = await request(setup.app, "/api/notifications/subscribe", jsonOptions("recipient", { subscription }));
+  expect(saved.status).toBe(201);
 
-  test("creates, lists, and marks an in-app notification as read", async () => {
-    const server = createTestServer();
-    const created = await request(server.server, "/api/notifications", {
-      method: "POST",
-      headers: { "x-user-id": "sender" },
-      body: JSON.stringify({
-        targetUserId: "recipient",
-        title: "Friend request",
-        message: "You have a new friend request.",
-      }),
-    });
-    assert.equal(created.status, 201);
-    const notification = created.body.notification as Record<string, unknown>;
-    assert.equal(notification.read, false);
+  const sent = await request(setup.app, "/api/notifications/send", jsonOptions("sender", {
+    targetUserId: " recipient ",
+    messageText: " Time to train! ",
+  }));
+  expect(sent.status).toBe(200);
+  expect(sentPayload).toEqual({ title: "GymBros Notification", body: "Time to train!", url: "/" });
+});
 
-    const listed = await request(server.server, "/api/notifications/inbox", {
-      method: "GET",
-      headers: { "x-user-id": "recipient" },
-    });
-    assert.equal(listed.status, 200);
-    const notifications = listed.body.notifications as Array<Record<string, unknown>>;
-    assert.equal(notifications.length, 1);
-
-    const marked = await request(
-      server.server,
-      `/api/notifications/inbox/${notification.id as string}/read`,
-      { method: "PATCH", headers: { "x-user-id": "recipient" } },
-    );
-    assert.equal(marked.status, 204);
-    const unread = await request(
-      server.server,
-      "/api/notifications/inbox?unreadOnly=true",
-      { method: "GET", headers: { "x-user-id": "recipient" } },
-    );
-    assert.deepEqual(unread.body.notifications, []);
+test("removes expired browser subscriptions", async () => {
+  const setup = createTestApp({
+    sendNotification: async () => {
+      throw Object.assign(new Error("expired"), { statusCode: 410 });
+    },
   });
+  await setup.store.save("recipient", subscription);
 
-  test("validates and stores an authenticated device token", async () => {
-    const server = createTestServer();
-    const saved = await request(server.server, "/api/notifications/device-token", {
-      method: "POST",
-      headers: { "x-user-id": "user-5" },
-      body: JSON.stringify({ token: "fcm-token", platform: "android" }),
-    });
+  const response = await request(setup.app, "/api/notifications/send", jsonOptions("sender", {
+    targetUserId: "recipient",
+    messageText: "Hello",
+  }));
 
-    test("sends native notifications and removes invalid FCM tokens", async () => {
-      let sentTokens: string[] = [];
-      const server = createTestServer(
-        undefined,
-        {
-          async send(tokens) {
-            sentTokens = tokens;
-            return ["expired-token"];
-          },
-        },
-      );
-      await request(server.server, "/api/notifications/device-token", {
-        method: "POST",
-        headers: { "x-user-id": "recipient" },
-        body: JSON.stringify({ token: "expired-token", platform: "android" }),
-      });
-      await request(server.server, "/api/notifications/device-token", {
-        method: "POST",
-        headers: { "x-user-id": "recipient" },
-        body: JSON.stringify({ token: "valid-token", platform: "android" }),
-      });
+  expect(response.status).toBe(410);
+  await expect(setup.store.findByUserId("recipient")).resolves.toBeNull();
+});
 
-      const result = await request(server.server, "/api/notifications", {
-        method: "POST",
-        headers: { "x-user-id": "sender" },
-        body: JSON.stringify({
-          targetUserId: "recipient",
-          title: "Friend request",
-          message: "You have a new friend request.",
-        }),
-      });
+test("creates, lists, and marks in-app notifications read", async () => {
+  const setup = createTestApp();
+  const created = await request(setup.app, "/api/notifications", jsonOptions("sender", {
+    targetUserId: "recipient",
+    title: "Friend request",
+    message: "You have a new friend request.",
+  }));
+  expect(created.status).toBe(201);
+  const createdBody = await created.json() as { notification: { id: string; read: boolean } };
+  expect(createdBody.notification.read).toBe(false);
 
-      assert.equal(result.status, 201);
-      assert.deepEqual(sentTokens, ["expired-token", "valid-token"]);
-      assert.deepEqual(server.deviceTokens, [
-        { userId: "recipient", token: "valid-token", platform: "android" },
-      ]);
-    });
-    assert.equal(saved.status, 204);
-    assert.deepEqual(server.deviceTokens, [
-      { userId: "user-5", token: "fcm-token", platform: "android" },
-    ]);
+  const listed = await request(setup.app, "/api/notifications/inbox", {
+    headers: { "x-user-id": "recipient" },
   });
-  await server.store.save("user-4", subscription);
+  expect(listed.status).toBe(200);
+  expect((await listed.json() as { notifications: unknown[] }).notifications).toHaveLength(1);
 
-  const result = await request(server.server, "/api/notifications/test", {
-    method: "POST",
-    headers: { "x-user-id": "user-4" },
-    body: JSON.stringify({}),
+  const marked = await request(setup.app, `/api/notifications/inbox/${createdBody.notification.id}/read`, {
+    method: "PATCH",
+    headers: { "x-user-id": "recipient" },
   });
+  expect(marked.status).toBe(204);
+  const unread = await request(setup.app, "/api/notifications/inbox?unreadOnly=true", {
+    headers: { "x-user-id": "recipient" },
+  });
+  expect(await unread.json()).toEqual({ notifications: [] });
+});
 
-  assert.equal(result.status, 200);
-  assert.deepEqual(sentPayload, {
-    title: "GymBros Test",
-    body: "Time to train!",
-    url: "/",
+test("validates device tokens and removes invalid native tokens", async () => {
+  const invalidToken = await request(createTestApp().app, "/api/notifications/device-token", jsonOptions("user", {
+    token: "token",
+    platform: "desktop",
+  }));
+  expect(invalidToken.status).toBe(400);
+
+  let sentTokens: string[] = [];
+  const nativePushSender: NativePushSender = {
+    async send(tokens) {
+      sentTokens = tokens;
+      return ["expired-token"];
+    },
+  };
+  const setup = createTestApp({ nativePushSender });
+  for (const token of ["expired-token", "valid-token"]) {
+    await request(setup.app, "/api/notifications/device-token", jsonOptions("recipient", { token, platform: "android" }));
+  }
+  const delivered = await request(setup.app, "/api/notifications", jsonOptions("sender", {
+    targetUserId: "recipient",
+    title: "Workout reminder",
+    message: "Time to train!",
+  }));
+
+  expect(delivered.status).toBe(201);
+  expect(sentTokens).toEqual(["expired-token", "valid-token"]);
+  expect(setup.deviceTokens).toEqual([{ userId: "recipient", token: "valid-token", platform: "android" }]);
+});
+
+test("sends a test push to the authenticated user's subscription", async () => {
+  let sentPayload: Record<string, unknown> | undefined;
+  const setup = createTestApp({
+    sendNotification: async (_subscription, payload) => {
+      sentPayload = JSON.parse(payload) as Record<string, unknown>;
+    },
   });
+  await setup.store.save("user", subscription);
+
+  const response = await request(setup.app, "/api/notifications/test", jsonOptions("user", {}));
+
+  expect(response.status).toBe(200);
+  expect(sentPayload).toEqual({ title: "GymBros Test", body: "Time to train!", url: "/" });
 });
