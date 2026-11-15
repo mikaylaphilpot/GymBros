@@ -94,10 +94,10 @@ This project was developed with assistance from generative AI tools:
 - **Scope**: API implementation for login, signup, and friends
 - **Use**: Used Copilot to help implement and connect the frontend API requests with backend routes for account registration and login, and for searching, adding, listing, and removing friends. 
 
-- **Tool**: 
-- **Dates**: 
-- **Scope**: 
-- **Use**:
+- **Tool**: ChatGPT
+- **Dates**: Nov 7-13
+- **Scope**: API implementation for home, profile, forgot password
+- **Use**: Used ChatGPT to help implement the APIs needed to load user information onto the profile and home pages, set up password reset functionality, store and display user and bro workouts, and set up notifications to "bug" other users.
 
 - **Tool**: 
 - **Dates**: 
