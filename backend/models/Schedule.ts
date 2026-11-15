@@ -1,6 +1,7 @@
+// AI-assisted: Initial Implementation suggested by Copilot
+
 import mongoose from "mongoose"
 
-// AI-assisted: Initial Implementation suggested by Copilot
 export interface ISchedule {
   userId: mongoose.Schema.Types.ObjectId,
   dayOfWeek: string,

@@ -1,3 +1,5 @@
+// AI-assisted: Initial Implementation suggested by Copilot
+
 const mongoose = require('mongoose');
 const path = require('path');
 
