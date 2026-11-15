@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');

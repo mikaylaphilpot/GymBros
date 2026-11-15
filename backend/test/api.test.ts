@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import { afterEach, describe, expect, jest, test } from "@jest/globals";
 import mongoose from "mongoose";
 import Schedule from "../models/Schedule";

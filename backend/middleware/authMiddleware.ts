@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import type { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 

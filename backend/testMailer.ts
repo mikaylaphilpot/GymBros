@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import transporter from './config/mailer';
 
 async function testConnection(): Promise<void> {

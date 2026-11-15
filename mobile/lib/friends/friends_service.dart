@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../config/app_config.dart';
 
 class AddFriendResult {
   const AddFriendResult({required this.added, required this.message});
@@ -249,13 +250,7 @@ class FriendsService {
     required this._tokenStore,
     String? baseUrl,
   }) : _client = client ?? http.Client(),
-       _baseUri = _apiBaseUri(
-         baseUrl ??
-             const String.fromEnvironment(
-               'API_BASE_URL',
-               defaultValue: 'http://10.0.2.2:5001/api/auth/',
-             ),
-       );
+       _baseUri = _apiBaseUri(baseUrl ?? apiBaseUrl);
 
   final http.Client _client;
   final TokenStore _tokenStore;

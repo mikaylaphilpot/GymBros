@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../config/app_config.dart';
 
 class AppNotification {
   const AppNotification({
@@ -69,13 +70,7 @@ class NotificationService {
     this._messaging,
     String? baseUrl,
   }) : _client = client ?? http.Client(),
-       _baseUri = _apiBaseUri(
-         baseUrl ??
-             const String.fromEnvironment(
-               'API_BASE_URL',
-               defaultValue: 'http://10.0.2.2:5001/api/auth/',
-             ),
-       );
+       _baseUri = _apiBaseUri(baseUrl ?? apiBaseUrl);
 
   final http.Client _client;
   final TokenStore _tokenStore;

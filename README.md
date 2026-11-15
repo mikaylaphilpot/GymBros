@@ -109,10 +109,10 @@ This project was developed with assistance from generative AI tools:
 - **Scope**: Initial database setup
 - **Use**: Used Copilot to set up and debug database for user and schedule data management.
 
-- **Tool**: 
-- **Dates**: 
-- **Scope**: 
-- **Use**:
+- **Tool**: Copilot
+- **Dates**: Oct 28 - Nov 15
+- **Scope**: Guided development, integration, testing, debugging, and documentation across the backend, mobile, and server deployment.
+- **Use**: I provided detailed instructions describing the required behavior and validation steps, then worked with Copilot to generate, implement, test, debug, and revise the project. When Copilot became stuck, I took over or redirected it to resolve the issue. I reviewed and confirmed all AI-generated changes, and used `AGENTS.md` to record the work completed and the verification performed.
 
 
 All AI-generated code was reviewed, tested, and modified to meet

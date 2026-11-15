@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 require('dotenv').config()
 const nodemailer = require("nodemailer");
 

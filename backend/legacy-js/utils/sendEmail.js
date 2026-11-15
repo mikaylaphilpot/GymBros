@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 const transporter = require('../config/mailer.js');
 
 async function sendEmail(to, subject, text){

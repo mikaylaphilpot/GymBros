@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import path from "node:path";
 import dotenv from "dotenv";
 

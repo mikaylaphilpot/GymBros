@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 //TEST FUNCTION TO CHECK DB CONNECTION
 require('dotenv').config();
 const mongoose = require('mongoose');

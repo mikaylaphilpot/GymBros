@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 // Manual helper functions for checking the database and SMTP connection.
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';

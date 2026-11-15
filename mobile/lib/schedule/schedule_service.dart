@@ -6,8 +6,8 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
+import '../config/app_config.dart';
 
-const _defaultAuthUrl = 'http://10.0.2.2:5001/api/auth/';
 const _daysOfWeek = <String>[
   'Monday',
   'Tuesday',
@@ -227,13 +227,7 @@ class ScheduleService {
   }
 
   static Uri _scheduleBaseUri(String? baseUrl) {
-    final uri = Uri.parse(
-      baseUrl ??
-          const String.fromEnvironment(
-            'API_BASE_URL',
-            defaultValue: _defaultAuthUrl,
-          ),
-    );
+    final uri = Uri.parse(baseUrl ?? apiBaseUrl);
     final segments = [
       ...uri.pathSegments.where((segment) => segment.isNotEmpty),
     ];

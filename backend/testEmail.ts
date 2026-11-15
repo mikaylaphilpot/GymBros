@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import 'dotenv/config';
 import sendEmail from './utils/sendEmail'; // Adjust path if needed
 
