@@ -359,8 +359,10 @@ void main() {
     expect(find.text('Add Bros'), findsOneWidget);
     expect(find.text('Best Bro'), findsOneWidget);
     expect(find.text('BestBro'), findsOneWidget);
+    expect(find.text('2 day streak · 5 bugs'), findsOneWidget);
     expect(find.text('Streak Bro'), findsOneWidget);
     expect(find.text('StreakBro'), findsOneWidget);
+    expect(find.text('7 day streak · 1 bugs'), findsOneWidget);
     expect(find.text('Regular Bros'), findsOneWidget);
     expect(find.text('AlreadyBro'), findsOneWidget);
 

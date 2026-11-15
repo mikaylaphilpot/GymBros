@@ -1028,9 +1028,21 @@ class _FriendStatRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  friend.username,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      friend.username,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      '${friend.streakCount} day streak · ${friend.bugCount} bugs',
+                      style: const TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
