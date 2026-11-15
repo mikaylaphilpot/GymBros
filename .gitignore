@@ -1,6 +1,7 @@
 .idea/
 node_modules/
 backend/node_modules/
+.gitignore
 
 .env
 .env.*
@@ -11,3 +12,10 @@ dist/
 .DS_Store
 mobile/android/app/google-services.json
 secure/
+
+UserWorkoutWidget.tsx
+UserWorkoutWidget.tsx
+HomePage.tsx
+frontend/src/components/BroWorkoutWidget.tsx
+frontend/src/components/UserWorkoutWidget.tsx
+frontend/src/pages/HomePage.tsx

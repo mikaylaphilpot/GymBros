@@ -53,13 +53,14 @@ export async function subscribeToPushNotifications(): Promise<PushSubscriptionJs
   }
 
   const existingSubscription = await registration.pushManager.getSubscription()
+  if (existingSubscription) {
+    await existingSubscription.unsubscribe()
+  }
 
-  const subscription =
-    existingSubscription ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: base64UrlToArrayBuffer(publicVapidKey),
-    }))
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: base64UrlToArrayBuffer(publicVapidKey),
+  })
 
   const serializedSubscription = subscription.toJSON() as PushSubscriptionJson
 
