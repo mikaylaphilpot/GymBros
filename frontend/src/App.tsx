@@ -12,6 +12,7 @@ import EditUserInfoPage from './pages/EditUserInfoPage'
 import EditSchedulePage from './pages/EditSchedulePage'
 import ResetPasswordPage from "./pages/ResetPasswordPage"
 import NotificationTestPage from "./pages/NotificationTestPage"
+import VerifyEmailPage from "./pages/VerifyEmailPage"
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/profile-page" element={<ProfilePage />} />
       <Route path="/edit-user-info-page" element={<EditUserInfoPage />} />
       <Route path="/edit-schedule-page" element={<EditSchedulePage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       <Route path="/test-notif-page" element={<NotificationTestPage />} />
 
