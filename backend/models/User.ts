@@ -1,3 +1,5 @@
+// AI-assisted: Initial Implementation suggested by Copilot
+
 import mongoose from "mongoose"
 
 export interface IFriends {

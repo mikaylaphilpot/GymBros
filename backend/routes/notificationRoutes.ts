@@ -275,6 +275,8 @@ export function createNotificationRouter({
         "friends.friendId": req.params.friendId,
       });
 
+      const sender = await User.findById(req.userId).select("username");
+
       if (!friend || !currentUser) {
         res.status(404).json({ message: "Friend relationship not found." });
         return;
@@ -295,8 +297,8 @@ export function createNotificationRouter({
         {
           title: kind === "bug" ? "Your bro is checking in!" : "Congratulations, bro!",
           message: kind === "bug"
-            ? `${req.userId} sent you a workout reminder.`
-            : `${req.userId} congratulated you on your workout!`,
+            ? `${sender?.username ?? "Your bro"} sent you a workout reminder.`
+            : `${sender?.username ?? "Your bro"} congratulated you on your workout!`,
           url: "/home-page",
         },
         {
