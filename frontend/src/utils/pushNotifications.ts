@@ -53,17 +53,18 @@ export async function subscribeToPushNotifications(): Promise<PushSubscriptionJs
   }
 
   const existingSubscription = await registration.pushManager.getSubscription()
+  if (existingSubscription) {
+    await existingSubscription.unsubscribe()
+  }
 
-  const subscription =
-    existingSubscription ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: base64UrlToArrayBuffer(publicVapidKey),
-    }))
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: base64UrlToArrayBuffer(publicVapidKey),
+  })
 
   const serializedSubscription = subscription.toJSON() as PushSubscriptionJson
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001"
 
   const response = await fetch(`${apiBaseUrl}/api/notifications/subscribe`, {
     method: "POST",
@@ -85,7 +86,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscriptionJs
 //Sends a test notification to the user to confirm subscription is active and working
 export async function sendTestNotification(): Promise<void> {
   const token = getAuthToken()
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001"
 
   const response = await fetch(`${apiBaseUrl}/api/notifications/test`, {
     method: "POST",

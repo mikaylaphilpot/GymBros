@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001"
+const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001"
 const tokenKey = "gymbros_auth_token"
 
 interface ApiResponse {

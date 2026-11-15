@@ -1,165 +1,119 @@
-# GymBros
+# GymBros Application
 
-GymBros is a MERN web application with a planned Flutter mobile client. The
-backend includes the Express API scaffold, MongoDB configuration, and push
-notification endpoints.
+## Description
 
-## Backend database configuration
+The GymBros application is a fitness-focused web application developed using the MERN stack, with an additional Flutter mobile application in development. The purpose of the application is to allow users to create accounts, log in, and access fitness-related features.
 
-Create a local `backend/.env` file with your MongoDB connection string:
+The application includes user authentication, email verification, password reset functionality, and a notification system. The backend handles API requests, database operations, and communication between the web and mobile applications.
 
-```text
-MONGODB_URI=<local or remote MongoDB connection string>
-```
+---
 
-`backend/.env` is ignored by Git. Keep real credentials there locally, or configure `MONGODB_URI` as an environment variable in your deployment environment. Never commit the real connection string.
+## Technologies Used
 
-## Backend development
+The application uses the MERN stack:
 
-The backend runs from TypeScript files. The original JavaScript files are preserved as reference copies in `backend/legacy-js/`; they are not used by the server. Comments in the TypeScript files describe how each part works.
+- **MongoDB** – Stores user accounts, notifications, and application data
+- **Express.js** – Handles backend API routes and requests
+- **React** – Provides the web application's user interface
+- **Node.js** – Runs the backend server
 
-From the `backend/` directory, run `npm run dev` for watch mode, `npm run typecheck` to check types, or `npm run build` followed by `npm start` to run the compiled server.
+Additional technologies include:
 
-## Flutter app
+- **TypeScript** – Used for backend development
+- **Flutter** – Used to develop the mobile application
+- **JWT (JSON Web Tokens)** – Handles user authentication
+- **Mailgun/SMTP** – Handles account verification and password reset emails
+- **Firebase Cloud Messaging (FCM)** – Supports mobile push notifications
+- **HTML, CSS, and JavaScript** – Used for frontend development
 
-The Android client, including instructions for running it, configuring the API, and extending the auth flow, is in [`mobile/README.md`](./mobile/README.md). The website is maintained separately and is not part of this Flutter project.
+---
 
-## Authentication API
+## High-Level Setup Instructions
 
-Base URL: `http://localhost:5001/api/auth`
+1. Install Node.js, npm, and the necessary development tools.
+2. Clone the GymBros GitHub repository.
+3. Navigate to the `backend` directory and install the required dependencies using `npm install`.
+4. Create a MongoDB database locally or through a remote database service.
+5. Create a `backend/.env` file and configure the MongoDB connection string using `MONGODB_URI`.
+6. Configure the necessary environment variables for JWT authentication and email services.
+7. Navigate to the `frontend` directory and install the frontend dependencies using `npm install`.
+8. Configure the frontend environment variables, including the backend API URL.
+9. Start the backend server using `npm run dev` from the `backend` directory.
+10. Start the frontend development server using `npm run dev` from the `frontend` directory.
+11. Open the local frontend address in a web browser to access the application.
 
-### Signup verification email configuration
+The backend can also be compiled using `npm run build` and started using `npm start`.
 
-Signup sends the verification link to the email address submitted by the new
-user through GymBros's server-side SMTP account. SMTP credentials belong to
-GymBros, not to individual users, and must stay in the backend `.env` file.
+The Flutter mobile application has separate setup instructions available in [`mobile/README.md`](https://github.com/mikaylaphilpot/GymBros/blob/main/mobile/README.md).
 
-For SendGrid SMTP, verify a sender identity in SendGrid and configure:
+---
 
-```text
-SMTP_HOST=smtp.sendgrid.net
-SMTP_PORT=587
-SMTP_USER=apikey
-SMTP_PASS=<SendGrid API key>
-SMTP_FROM=<verified sender email>
-PUBLIC_API_URL=http://137.184.142.16:5001
-```
+## Running and Accessing the Application
 
-Use an HTTPS domain for `PUBLIC_API_URL` before production deployment. Never
-commit or share the API key, SMTP password, or populated `.env` file.
+Once MongoDB is connected and the frontend and backend servers are running, open a web browser and navigate to the application's local address.
 
-### POST /signup
-Creates a new user account.
+The application allows users to create accounts, log in, and access available fitness-related features.
 
-Request body:
-- username: string
-- email: string
-- password: string
+The backend authentication API runs locally at `http://localhost:5001/api/auth`, while the frontend development server typically runs at `http://localhost:5173`.
 
-Success: 201 Created
+The application uses JWT authentication to manage user sessions and protect endpoints that require users to be logged in.
 
-### POST /login
-Authenticates a user and returns a JWT.
+A notification system is also available for testing browser notifications and supporting mobile notifications. The Flutter application is being developed as an additional client that communicates with the same backend API.
 
-Request body:
-- username: string
-- password: string
+---
 
-Success: 200 OK
+## Assumptions, Limitations, and AI Usage
 
-Response:
-- message: string
-- token: JWT string (expires after 1 hour)
+### Assumptions
 
-### GET /me
-Returns information about the authenticated user.
+- Node.js and npm are installed on the development machine.
+- A local or remote MongoDB database is available.
+- The user has basic familiarity with JavaScript, TypeScript, React, and Node.js.
+- The necessary frontend and backend dependencies have been installed.
+- The application's environment variables and database credentials have been configured correctly.
+- The frontend and backend servers are running and can communicate with each other.
+- Email verification and notification features require additional third-party service configuration.
 
-Required header:
-Authorization: Bearer <token>
+### Limitations
 
-Success: 200 OK
+- Push notifications require additional configuration, including browser permissions or Firebase Cloud Messaging for mobile devices.
+- Some notification features currently rely on development testing endpoints and are not intended for production use.
+- The application requires a working MongoDB connection to store and retrieve user information.
+- Certain features are still being developed and may not be fully integrated across the frontend, backend, and mobile application.
 
-Response:
-- id: MongoDB user ID
-- username: string
-- email: string
+### AI Usage
+This project was developed with assistance from generative AI tools:
 
-Errors:
-- 401: Missing, invalid, or expired JWT
-- 404: User not found
+- **Tool**: Copilot
+- **Dates**: Nov 4-11
+- **Scope**: Set up the initial flutter project and translated my APIs into the mobile project
+- **Use**: Set up the mobile project using Copilot to debug an issues with set up as well as generate the dart files for the log in, sign up, and edit schedule functions using the typescript code as reference
 
-### Upcoming Features
-- Email verification
-- Password reset
+- **Tool**: Copilot
+- **Dates**: Nov 6-15
+- **Scope**: API implementation for login, signup, and friends
+- **Use**: Used Copilot to help implement and connect the frontend API requests with backend routes for account registration and login, and for searching, adding, listing, and removing friends. 
 
-## Local web push notification test
+- **Tool**: ChatGPT
+- **Dates**: Nov 7-13
+- **Scope**: API implementation for home, profile, forgot password
+- **Use**: Used ChatGPT to help implement the APIs needed to load user information onto the profile and home pages, set up password reset functionality, store and display user and bro workouts, and set up notifications to "bug" other users.
 
-This test requires the backend and frontend `.env` files to contain the
-MongoDB, VAPID, and `VITE_API_BASE_URL` values from their `.env.example`
-templates. Do not commit either populated `.env` file.
+- **Tool**: Copilot
+- **Dates**: Oct 22-30
+- **Scope**: Initial database setup
+- **Use**: Used Copilot to set up and debug database for user and schedule data management.
 
-Start the backend in one terminal:
+- **Tool**: 
+- **Dates**: 
+- **Scope**: 
+- **Use**:
 
-```powershell
-Push-Location backend
-npm run dev
-```
+- **Tool**: 
+- **Dates**: 
+- **Scope**: 
+- **Use**:
 
-Start the frontend in a second terminal:
-
-```powershell
-Push-Location frontend
-npm run dev
-```
-
-Open `http://localhost:5173/notifications-test` in Chrome or Edge, not the
-VS Code embedded browser. Enter the recipient's MongoDB user `_id`, click
-**Enable notifications**, and allow browser notifications. After the page
-reports that notifications are enabled, click **Send test notification**.
-
-The page uses `POST /api/notifications/test`, which sends a default test
-message to the authenticated development user. Production requests use a
-bearer JWT; local testing may use the `x-user-id` identity header only when
-`ALLOW_DEV_USER_HEADER=true`, so this endpoint remains for local testing only.
-The existing `POST /api/notifications/send` endpoint remains available for
-testing messages between different subscribed users.
-
-### Mobile notification API
-
-Authenticated mobile clients use the same `/api/notifications` base:
-
-- `GET /inbox?unreadOnly=true&limit=50` lists the signed-in user's notifications.
-- `PATCH /inbox/:notificationId/read` marks one owned notification as read.
-- `POST /` creates an in-app notification for `targetUserId` with `title`,
-  `message`, and optional `url`.
-- `POST /device-token` registers a future native push token with
-  `{ "token": "...", "platform": "android" }`.
-- `DELETE /device-token` removes a registered token.
-
-All mobile endpoints require the user's JWT bearer token. FCM delivery is enabled by setting `FCM_ENABLED=true` and
-`GOOGLE_APPLICATION_CREDENTIALS` to a backend-only Firebase service-account
-JSON path. The in-app feed continues to work when FCM is disabled. See
-[`mobile/README.md`](./mobile/README.md#configure-firebase-cloud-messaging) for
-the Android and server setup.
-
-For a PowerShell API test, use the actual recipient ID and run both commands:
-
-```powershell
-$body = @{
-  targetUserId = "YOUR_MONGODB_USER_ID"
-  messageText = "Time to train!"
-  title = "GymBros Test"
-  url = "/"
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://localhost:5001/api/notifications/send" `
-  -Method Post `
-  -Headers @{ "x-user-id" = "test-sender" } `
-  -ContentType "application/json" `
-  -Body $body
-```
-
-Do not send the literal text `YOUR_MONGODB_USER_ID`; replace it with the same
-ID used on the test page. A response saying that the user is not subscribed
-means the browser subscription step did not complete for that ID.
+All AI-generated code was reviewed, tested, and modified to meet
+assignment requirements. Final implementation reflects my understanding
+of the concepts.
