@@ -1,3 +1,4 @@
+// AI-assisted: Initial Implementation suggested by Copilot
 // Registers this device for push notifications and loads/updates the inbox.
 import 'dart:async';
 import 'dart:convert';

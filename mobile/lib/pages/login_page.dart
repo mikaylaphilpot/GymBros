@@ -1,3 +1,4 @@
+// AI-assisted: Initial Implementation suggested by Copilot
 // Flutter counterpart to the existing web sign-in flow; submits credentials
 // through AuthService and reports the result to the app.
 import 'package:flutter/material.dart';

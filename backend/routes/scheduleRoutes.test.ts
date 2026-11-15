@@ -1,3 +1,4 @@
+// AI-assisted: Initial Implementation suggested by Copilot
 import { afterEach, beforeEach, expect, jest, test } from "@jest/globals";
 import express from "express";
 import jwt from "jsonwebtoken";
