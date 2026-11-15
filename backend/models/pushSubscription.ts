@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import { lookup } from "node:dns/promises";
 import net from "node:net";
 

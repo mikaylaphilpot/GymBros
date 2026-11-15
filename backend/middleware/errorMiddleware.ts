@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import type { ErrorRequestHandler } from "express";
 
 // AI-assisted: centralized Express error responses keep status handling and

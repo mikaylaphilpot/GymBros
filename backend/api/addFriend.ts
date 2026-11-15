@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import mongoose from "mongoose";
 import User from "../models/User.js";
 

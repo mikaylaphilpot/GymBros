@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 // AI-assisted: Initial Implementation suggested by Copilot
 
 import mongoose from 'mongoose';

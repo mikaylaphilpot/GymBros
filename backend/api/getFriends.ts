@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import mongoose from "mongoose";
 import User, { type IFriends } from "../models/User.js";
 import Schedule, { type DayOfWeek } from "../models/Schedule.js";

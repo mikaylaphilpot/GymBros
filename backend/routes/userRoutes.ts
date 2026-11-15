@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import { Router } from "express";
 import { searchUsers } from "../api/search";
 import { addFriend } from "../api/addFriend";

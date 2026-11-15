@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 const jwt = require('jsonwebtoken');
 
 // JWT authentication middleware.

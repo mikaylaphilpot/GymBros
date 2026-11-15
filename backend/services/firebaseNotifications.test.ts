@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 import { afterAll, beforeEach, expect, jest, test } from "@jest/globals";
 
 jest.mock("firebase-admin/app", () => ({

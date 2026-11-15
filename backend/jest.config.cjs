@@ -1,3 +1,4 @@
+//AI-assisted: Initial implementation suggested by Copilot (reviewed and modified)
 module.exports = {
   testEnvironment: "node",
   testMatch: ["**/*.test.ts"],
