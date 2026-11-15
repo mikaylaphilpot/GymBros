@@ -273,7 +273,6 @@ void main() {
     final requests = <http.Request>[];
     final tokenStore = _MemoryTokenStore()..token = 'test-token';
     var friendAdded = false;
-    var friendDeleted = false;
     final friendsService = FriendsService(
       tokenStore: tokenStore,
       baseUrl: 'http://localhost:5001/api/auth/',
@@ -283,14 +282,13 @@ void main() {
           return http.Response(
             jsonEncode({
               'otherFriends': [
-                if (!friendDeleted)
-                  {
-                    'friendId': 'existing-friend',
-                    'username': 'AlreadyBro',
-                    'streakCount': 0,
-                    'bugCount': 0,
-                    'lastBuggedAt': null,
-                  },
+                {
+                  'friendId': 'existing-friend',
+                  'username': 'AlreadyBro',
+                  'streakCount': 0,
+                  'bugCount': 0,
+                  'lastBuggedAt': null,
+                },
                 for (final friend in [
                   ('friend-two', 'BroTwo'),
                   ('friend-three', 'BroThree'),
@@ -389,16 +387,6 @@ void main() {
             201,
           );
         }
-        if (request.method == 'DELETE') {
-          friendDeleted = true;
-          return http.Response(
-            jsonEncode({
-              'deleted': true,
-              'message': 'Friend deleted successfully.',
-            }),
-            200,
-          );
-        }
         return http.Response('{}', 404);
       }),
     );
@@ -438,44 +426,35 @@ void main() {
     }
 
     expect(find.text('AlreadyBro'), findsOneWidget);
-    expect(find.text('already@example.com'), findsOneWidget);
     expect(find.text('0 day streak · 0 bugs'), findsOneWidget);
     expect(find.text('NewBro'), findsNothing);
+    expect(find.text('Best Bro'), findsOneWidget);
+    expect(find.text('Streak Bro'), findsOneWidget);
+    expect(find.text('Regular Bros'), findsOneWidget);
+    expect(find.text('BestBro'), findsOneWidget);
+    expect(find.text('StreakBro'), findsOneWidget);
     expect(find.text('BroTwo'), findsOneWidget);
     expect(find.text('BroThree'), findsOneWidget);
-    expect(find.text('BroFour'), findsNothing);
+    expect(find.text('BroFour'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsNothing);
     expect(find.byTooltip('Bug AlreadyBro'), findsNothing);
     expect(find.byIcon(Icons.bug_report_outlined), findsNothing);
-    expect(find.byTooltip('Bro options'), findsNWidgets(3));
+    expect(find.byTooltip('Bro options'), findsNWidgets(6));
 
-    await tester.tap(find.byTooltip('Bro options').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Delete Bro'), findsOneWidget);
-    await tester.tap(find.text('Delete Bro'));
-    await tester.pumpAndSettle();
-    expect(find.text('AlreadyBro'), findsNothing);
     expect(
-      requests.any(
-        (request) =>
-            request.method == 'DELETE' &&
-            request.url.path.endsWith(
-              '/users/current-user/friends/existing-friend',
-            ),
-      ),
-      isTrue,
+      requests.where((request) => request.url.path.endsWith('/search')),
+      isEmpty,
     );
-
-    final searchQueries = requests
-        .where((request) => request.url.path.endsWith('/search'))
-        .map((request) => request.url.queryParameters['q'])
-        .toList();
-    expect(searchQueries, ['B', 'Br', 'Bro']);
     await tester.tap(find.text('Add Bros'));
     await tester.pumpAndSettle();
     final addSearchField = find.byType(TextField).last;
     await tester.enterText(addSearchField, 'New');
     await tester.pumpAndSettle();
+    final searchQueries = requests
+        .where((request) => request.url.path.endsWith('/search'))
+        .map((request) => request.url.queryParameters['q'])
+        .toList();
+    expect(searchQueries, ['New']);
 
     final addDialog = find.byType(AlertDialog);
     expect(

@@ -552,17 +552,13 @@ class _FriendsPage extends StatefulWidget {
 
 class _FriendsPageState extends State<_FriendsPage> {
   final _searchController = TextEditingController();
-  List<SearchUser> _results = [];
   FriendsStats? _friendsStats;
   final Set<String> _friendIds = {};
   final Set<String> _deletingFriendIds = {};
   final Map<String, String> _deleteErrors = {};
-  bool _isSearching = false;
   bool _isLoadingFriends = true;
   bool _friendsLoadFailed = false;
   String? _friendsError;
-  String? _searchError;
-  int _searchGeneration = 0;
 
   @override
   void initState() {
@@ -574,40 +570,6 @@ class _FriendsPageState extends State<_FriendsPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _searchUsers(String value) async {
-    final generation = ++_searchGeneration;
-    if (value.trim().isEmpty) {
-      setState(() {
-        _results = [];
-        _isSearching = false;
-        _searchError = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _results = [];
-      _isSearching = true;
-      _searchError = null;
-    });
-
-    try {
-      final results = await widget.friendsService.searchUsers(value);
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() => _results = results);
-    } on FriendsException catch (error) {
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() => _searchError = error.message);
-    } catch (_) {
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() => _searchError = 'Unable to search for bros.');
-    } finally {
-      if (mounted && generation == _searchGeneration) {
-        setState(() => _isSearching = false);
-      }
-    }
   }
 
   Future<void> _loadFriends() async {
@@ -740,25 +702,23 @@ class _FriendsPageState extends State<_FriendsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final friendStatsById = <String, FriendDetails>{};
     final stats = _friendsStats;
-    if (stats != null) {
-      friendStatsById.addAll({
-        for (final friend in stats.otherFriends) friend.friendId: friend,
-      });
-      final highestStreakFriend = stats.highestStreakFriend;
-      if (highestStreakFriend != null) {
-        friendStatsById[highestStreakFriend.friendId] = highestStreakFriend;
-      }
-      final mostBuggedFriend = stats.mostBuggedFriend;
-      if (mostBuggedFriend != null) {
-        friendStatsById[mostBuggedFriend.friendId] = mostBuggedFriend;
-      }
-    }
-    final matchingFriends = _results
-        .where((user) => _friendIds.contains(user.id))
-        .take(3)
-        .toList();
+    final normalizedQuery = _searchController.text.trim().toLowerCase();
+    bool matchesFriend(FriendDetails? friend) =>
+        friend != null &&
+        (normalizedQuery.isEmpty ||
+            friend.username.toLowerCase().contains(normalizedQuery));
+    final filteredMostBuggedFriend = matchesFriend(stats?.mostBuggedFriend)
+        ? stats?.mostBuggedFriend
+        : null;
+    final filteredHighestStreakFriend =
+        matchesFriend(stats?.highestStreakFriend)
+        ? stats?.highestStreakFriend
+        : null;
+    final filteredOtherFriends =
+        (stats?.otherFriends ?? const <FriendDetails>[])
+            .where(matchesFriend)
+            .toList();
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -768,7 +728,7 @@ class _FriendsPageState extends State<_FriendsPage> {
             Expanded(
               child: TextField(
                 controller: _searchController,
-                onChanged: _searchUsers,
+                onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.none,
                 autocorrect: false,
                 decoration: const InputDecoration(
@@ -793,81 +753,49 @@ class _FriendsPageState extends State<_FriendsPage> {
           ],
         ),
         const SizedBox(height: 24),
-        if (_searchController.text.trim().isNotEmpty) ...[
-          if (_isSearching) const LinearProgressIndicator(color: _red),
-          if (_searchError != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(_searchError!, style: const TextStyle(color: _red)),
-            ),
-          if (_searchError == null && !_isSearching && matchingFriends.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('No matching bros found.'),
-            )
-          else if (_searchError == null)
-            for (final user in matchingFriends)
-              Builder(
-                builder: (context) {
-                  final friend = friendStatsById[user.id];
-                  if (friend == null) return const SizedBox.shrink();
-                  return Card(
-                    color: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: const BorderSide(color: Color(0xFFDDDDDD)),
-                    ),
-                    child: _FriendStatRow(
-                      friend: friend,
-                      email: user.email,
-                      infoLeftInset: 8,
-                      isDeleting: _deletingFriendIds.contains(friend.friendId),
-                      error: _deleteErrors[friend.friendId],
-                      onDelete: () => _deleteFriend(friend),
-                    ),
-                  );
-                },
-              ),
-        ] else ...[
-          if (_isLoadingFriends)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(child: CircularProgressIndicator(color: _red)),
-            )
-          else if (_friendsError != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(_friendsError!, style: const TextStyle(color: _red)),
-            )
-          else ...[
-            _FriendSection(
-              title: 'Best Bro',
-              subtitle: 'Bugged the most',
-              friends: [?_friendsStats?.mostBuggedFriend],
-              emptyMessage: 'No best bro yet.',
-              deletingFriendIds: _deletingFriendIds,
-              deleteErrors: _deleteErrors,
-              onDelete: _deleteFriend,
-            ),
-            _FriendSection(
-              title: 'Streak Bro',
-              subtitle: 'Highest streak',
-              friends: [?_friendsStats?.highestStreakFriend],
-              emptyMessage: 'No streak bro yet.',
-              deletingFriendIds: _deletingFriendIds,
-              deleteErrors: _deleteErrors,
-              onDelete: _deleteFriend,
-            ),
-            _FriendSection(
-              title: 'Regular Bros',
-              friends: _friendsStats?.otherFriends ?? const [],
-              emptyMessage: 'No regular bros yet.',
-              deletingFriendIds: _deletingFriendIds,
-              deleteErrors: _deleteErrors,
-              onDelete: _deleteFriend,
-            ),
-          ],
+        if (_isLoadingFriends)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator(color: _red)),
+          )
+        else if (_friendsError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(_friendsError!, style: const TextStyle(color: _red)),
+          )
+        else ...[
+          _FriendSection(
+            title: 'Best Bro',
+            subtitle: 'Bugged the most',
+            friends: [?filteredMostBuggedFriend],
+            emptyMessage: normalizedQuery.isEmpty
+                ? 'No best bro yet.'
+                : 'No matching bros found.',
+            deletingFriendIds: _deletingFriendIds,
+            deleteErrors: _deleteErrors,
+            onDelete: _deleteFriend,
+          ),
+          _FriendSection(
+            title: 'Streak Bro',
+            subtitle: 'Highest streak',
+            friends: [?filteredHighestStreakFriend],
+            emptyMessage: normalizedQuery.isEmpty
+                ? 'No streak bro yet.'
+                : 'No matching bros found.',
+            deletingFriendIds: _deletingFriendIds,
+            deleteErrors: _deleteErrors,
+            onDelete: _deleteFriend,
+          ),
+          _FriendSection(
+            title: 'Regular Bros',
+            friends: filteredOtherFriends,
+            emptyMessage: normalizedQuery.isEmpty
+                ? 'No regular bros yet.'
+                : 'No matching bros found.',
+            deletingFriendIds: _deletingFriendIds,
+            deleteErrors: _deleteErrors,
+            onDelete: _deleteFriend,
+          ),
         ],
       ],
     );
@@ -934,15 +862,11 @@ class _FriendStatRow extends StatelessWidget {
     required this.friend,
     required this.isDeleting,
     required this.onDelete,
-    this.email,
-    this.infoLeftInset = 0,
     this.error,
   });
 
   final FriendDetails friend;
   final bool isDeleting;
-  final String? email;
-  final double infoLeftInset;
   final String? error;
   final VoidCallback onDelete;
 
@@ -955,26 +879,21 @@ class _FriendStatRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(left: infoLeftInset),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        friend.username,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      friend.username,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      '${friend.streakCount} day streak · ${friend.bugCount} bugs',
+                      style: const TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 12,
                       ),
-                      if (email != null)
-                        Text(email!, style: const TextStyle(fontSize: 12)),
-                      Text(
-                        '${friend.streakCount} day streak · ${friend.bugCount} bugs',
-                        style: const TextStyle(
-                          color: Color(0xFF666666),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               if (isDeleting)
