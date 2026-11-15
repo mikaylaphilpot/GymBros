@@ -89,10 +89,10 @@ This project was developed with assistance from generative AI tools:
 - **Scope**: Set up the initial flutter project and translated my APIs into the mobile project
 - **Use**: Set up the mobile project using Copilot to debug an issues with set up as well as generate the dart files for the log in, sign up, and edit schedule functions using the typescript code as reference
 
-- **Tool**: 
-- **Dates**: 
-- **Scope**: 
-- **Use**:
+- **Tool**: Copilot
+- **Dates**: Nov 6-15
+- **Scope**: API implementation for login, signup, and friends
+- **Use**: Used Copilot to help implement and connect the frontend API requests with backend routes for account registration and login, and for searching, adding, listing, and removing friends. 
 
 - **Tool**: 
 - **Dates**: 
